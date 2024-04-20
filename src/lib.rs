@@ -4,11 +4,7 @@ pub mod api {
         pub mod client_builder;
     }
     pub mod nadeo_request {
-        pub mod presets {
-            pub mod core;
-            pub mod live;
-            pub mod meet;
-        }
+        pub mod presets;
         pub mod request;
         pub mod request_builder;
     }

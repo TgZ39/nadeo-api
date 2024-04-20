@@ -25,7 +25,7 @@ impl NadeoClient {
         NadeoClientBuilder::default()
     }
 
-    pub async fn execute_request(&mut self, request: NadeoRequest) -> anyhow::Result<Response> {
+    pub async fn execute(&mut self, request: NadeoRequest) -> anyhow::Result<Response> {
         match request.service {
             Service::NadeoServices => {
                 if self.normal_auth.expires_in() < EXPIRATION_TIME_BUFFER {

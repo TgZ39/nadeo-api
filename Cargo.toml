@@ -17,4 +17,4 @@ serde_json = "1.0.116"
 thiserror = "1.0.58"
 chrono = "0.4.38"
 strum = { version = "0.26.2", features = ["strum_macros", "derive"] }
-crossbeam = "0.8.4"
+uuid = { version = "1.8.0", features = ["v4"] }
