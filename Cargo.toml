@@ -1,5 +1,5 @@
 [package]
-name = "nadeoapi"
+name = "nadeo-api"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,7 +14,7 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 serde = { version = "1.0.198", features = ["derive"] }
 serde_json = "1.0.116"
-regex = "1.10.4"
-uuid = { version = "1.8.0", features = ["v4"] }
 thiserror = "1.0.58"
 chrono = "0.4.38"
+strum = { version = "0.26.2", features = ["strum_macros", "derive"] }
+crossbeam = "0.8.4"
