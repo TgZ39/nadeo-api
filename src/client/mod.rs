@@ -1,7 +1,7 @@
-use reqwest::Response;
 use crate::auth::{AuthInfo, Service};
 use crate::client::client_builder::NadeoClientBuilder;
 use crate::request::{HttpMethod, NadeoRequest};
+use reqwest::Response;
 
 pub mod client_builder;
 
@@ -57,7 +57,11 @@ impl NadeoClient {
             HttpMethod::Post => self.client.post(request.url),
         };
 
-        let res = api_request.headers(headers).send().await?.error_for_status()?;
+        let res = api_request
+            .headers(headers)
+            .send()
+            .await?
+            .error_for_status()?;
         Ok(res)
     }
 

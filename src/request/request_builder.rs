@@ -1,7 +1,7 @@
-use reqwest::header::{HeaderMap, IntoHeaderName};
-use thiserror::Error;
 use crate::auth::Service;
 use crate::request::{HttpMethod, NadeoRequest};
+use reqwest::header::{HeaderMap, IntoHeaderName};
+use thiserror::Error;
 
 pub struct NadeoRequestBuilder {
     service: Option<Service>,

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use crate::auth::token::{impl_payload, impl_token, Secret, Signature};
 use core::str::FromStr;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AccessToken {

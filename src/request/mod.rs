@@ -1,6 +1,6 @@
-use reqwest::header::HeaderMap;
 use crate::auth::Service;
 use crate::request::request_builder::NadeoRequestBuilder;
+use reqwest::header::HeaderMap;
 
 pub mod request_builder;
 

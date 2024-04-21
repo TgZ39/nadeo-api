@@ -1,11 +1,11 @@
-use std::str::FromStr;
-use reqwest::Client;
-use reqwest::header::{HeaderMap, USER_AGENT};
-use serde_json::{json, Value};
 use crate::client::NADEO_REFRESH_URL;
+use reqwest::header::{HeaderMap, USER_AGENT};
+use reqwest::Client;
+use serde_json::{json, Value};
+use std::str::FromStr;
 
-pub use token::access_token::AccessToken as AccessToken;
-pub use token::refresh_token::RefreshToken as RefreshToken;
+pub use token::access_token::AccessToken;
+pub use token::refresh_token::RefreshToken;
 
 pub mod token;
 

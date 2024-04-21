@@ -1,15 +1,15 @@
-use std::str::FromStr;
-use anyhow::Error;
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
-use reqwest::Client;
-use reqwest::header::HeaderMap;
-use serde_json::{json, Value};
-use thiserror::Error;
-use crate::auth::{AuthInfo, Service};
 use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
-use crate::client::{NADEO_AUTH_URL, NadeoClient, UBISOFT_APP_ID};
+use crate::auth::{AuthInfo, Service};
+use crate::client::{NadeoClient, NADEO_AUTH_URL, UBISOFT_APP_ID};
+use anyhow::Error;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
+use reqwest::header::HeaderMap;
+use reqwest::Client;
+use serde_json::{json, Value};
+use std::str::FromStr;
+use thiserror::Error;
 
 const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
 const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
