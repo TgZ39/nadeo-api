@@ -1,13 +1,7 @@
-use crate::api::auth::auth_info::Service;
-use crate::api::nadeo_request::request::NadeoRequest;
 use reqwest::header::{HeaderMap, IntoHeaderName};
 use thiserror::Error;
-
-#[derive(Debug)]
-pub enum HttpMethod {
-    Get,
-    Post,
-}
+use crate::auth::Service;
+use crate::request::{HttpMethod, NadeoRequest};
 
 pub struct NadeoRequestBuilder {
     service: Option<Service>,

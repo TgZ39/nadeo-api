@@ -1,7 +1,6 @@
-use crate::api::auth::token_util::{Secret, Signature};
-use crate::{impl_payload, impl_token};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use crate::auth::token::{impl_payload, impl_token, Secret, Signature};
+use core::str::FromStr;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AccessToken {

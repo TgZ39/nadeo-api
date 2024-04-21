@@ -1,8 +1,9 @@
-use crate::api::auth::auth_info::{AuthInfo, Service};
-use crate::api::nadeo_client::client_builder::NadeoClientBuilder;
-use crate::api::nadeo_request::request::NadeoRequest;
-use crate::api::nadeo_request::request_builder::HttpMethod;
 use reqwest::Response;
+use crate::auth::{AuthInfo, Service};
+use crate::client::client_builder::NadeoClientBuilder;
+use crate::request::{HttpMethod, NadeoRequest};
+
+pub mod client_builder;
 
 pub const NADEO_AUTH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/ubiservices";
@@ -56,7 +57,8 @@ impl NadeoClient {
             HttpMethod::Post => self.client.post(request.url),
         };
 
-        Ok(api_request.headers(headers).send().await?)
+        let res = api_request.headers(headers).send().await?.error_for_status()?;
+        Ok(res)
     }
 
     pub async fn refresh_tokens(&mut self) -> anyhow::Result<()> {

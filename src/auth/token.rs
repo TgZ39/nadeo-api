@@ -1,11 +1,14 @@
 use thiserror::Error;
+
+pub mod access_token;
+pub mod refresh_token;
+
 pub type Secret = String;
 pub type Signature = String;
 
-#[macro_export]
 macro_rules! impl_token {
     ($token:ty, $payload:ty) => {
-        use $crate::api::auth::token_util::TokenCreationError;
+        use $crate::auth::token::TokenCreationError;
 
         impl FromStr for $token {
             type Err = TokenCreationError;
@@ -47,6 +50,7 @@ macro_rules! impl_token {
         }
     };
 }
+pub(crate) use impl_token;
 
 #[derive(Error, Debug)]
 pub enum TokenCreationError {
@@ -55,14 +59,12 @@ pub enum TokenCreationError {
     #[error("Could not parse input correctly")]
     InvalidPayload,
 }
-
-#[macro_export]
 macro_rules! impl_payload {
     ($payload:ty, $exp:ident) => {
         use base64::prelude::BASE64_URL_SAFE_NO_PAD;
         use base64::Engine;
         use chrono::Local;
-        use $crate::api::auth::token_util::PayloadCreationError;
+        use $crate::auth::token::PayloadCreationError;
 
         impl FromStr for $payload {
             type Err = PayloadCreationError;
@@ -97,6 +99,7 @@ macro_rules! impl_payload {
         }
     };
 }
+pub(crate) use impl_payload;
 
 #[derive(Debug, Error)]
 pub enum PayloadCreationError {
