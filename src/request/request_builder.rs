@@ -3,10 +3,11 @@ use crate::request::{HttpMethod, NadeoRequest};
 use crate::{Error, Result};
 use derive_more::Display;
 use reqwest::header::{HeaderMap, IntoHeaderName};
+use reqwest::Url;
 
 pub struct NadeoRequestBuilder {
     service: Option<Service>,
-    url: Option<String>,
+    url: Option<Url>,
     method: Option<HttpMethod>,
     headers: HeaderMap,
 }
@@ -22,7 +23,7 @@ macro_rules! builder_fn {
     };
 }
 
-builder_fn!(NadeoRequestBuilder, url, url, String);
+builder_fn!(NadeoRequestBuilder, url, url, Url);
 builder_fn!(NadeoRequestBuilder, method, http_method, HttpMethod);
 builder_fn!(NadeoRequestBuilder, service, service, Service);
 

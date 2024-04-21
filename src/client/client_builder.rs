@@ -33,7 +33,7 @@ impl Default for NadeoClientBuilder {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum ClientCreationError {
+pub enum ClientBuilderError {
     #[error("No email was provided")]
     MissingEMail,
     #[error("No password was provided")]
@@ -55,11 +55,11 @@ impl NadeoClientBuilder {
 
     pub async fn build(self) -> Result<NadeoClient> {
         if self.email.is_none() {
-            return Err(Error::from(ClientCreationError::MissingEMail));
+            return Err(Error::from(ClientBuilderError::MissingEMail));
         }
 
         if self.password.is_none() {
-            return Err(Error::from(ClientCreationError::MissingPassword));
+            return Err(Error::from(ClientBuilderError::MissingPassword));
         }
 
         let ticket =

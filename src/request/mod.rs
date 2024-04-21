@@ -1,13 +1,14 @@
 use crate::auth::Service;
 use crate::request::request_builder::NadeoRequestBuilder;
 use reqwest::header::HeaderMap;
+use reqwest::Url;
 
 pub mod request_builder;
 
 #[derive(Debug)]
 pub struct NadeoRequest {
     pub service: Service,
-    pub url: String,
+    pub url: Url,
     pub method: HttpMethod,
     pub headers: HeaderMap,
 }
