@@ -1,7 +1,8 @@
 use crate::auth::Service;
 use crate::request::{HttpMethod, NadeoRequest};
+use crate::{Error, Result};
+use derive_more::Display;
 use reqwest::header::{HeaderMap, IntoHeaderName};
-use thiserror::Error;
 
 pub struct NadeoRequestBuilder {
     service: Option<Service>,
@@ -36,13 +37,10 @@ impl Default for NadeoRequestBuilder {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug, Display)]
 pub enum RequestBuilderError {
-    #[error("No URL was provided")]
     MissingUrl,
-    #[error("No HTTP-method was provided")]
     MissingHttpMethod,
-    #[error("No NadeoServiceType was provided")]
     MissingService,
 }
 
@@ -55,15 +53,15 @@ impl NadeoRequestBuilder {
         self
     }
 
-    pub fn build(self) -> Result<NadeoRequest, RequestBuilderError> {
+    pub fn build(self) -> Result<NadeoRequest> {
         if self.url.is_none() {
-            return Err(RequestBuilderError::MissingUrl);
+            return Err(Error::from(RequestBuilderError::MissingUrl));
         }
         if self.method.is_none() {
-            return Err(RequestBuilderError::MissingHttpMethod);
+            return Err(Error::from(RequestBuilderError::MissingHttpMethod));
         }
         if self.service.is_none() {
-            return Err(RequestBuilderError::MissingService);
+            return Err(Error::from(RequestBuilderError::MissingService));
         }
 
         Ok(NadeoRequest {

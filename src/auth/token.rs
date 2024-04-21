@@ -1,4 +1,8 @@
+use derive_more::Display;
 use thiserror::Error;
+
+pub use access_token::AccessToken;
+pub use refresh_token::RefreshToken;
 
 pub mod access_token;
 pub mod refresh_token;
@@ -8,23 +12,23 @@ pub type Signature = String;
 
 macro_rules! impl_token {
     ($token:ty, $payload:ty) => {
-        use $crate::auth::token::TokenCreationError;
-
-        impl FromStr for $token {
-            type Err = TokenCreationError;
+        impl std::str::FromStr for $token {
+            type Err = $crate::auth::token::TokenError;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
+                use $crate::auth::token::TokenError;
+
                 let values: Vec<_> = s.split_terminator('.').collect();
                 if values.len() != 3 {
-                    return Err(TokenCreationError::InvalidInput);
+                    return Err(TokenError::InvalidInput);
                 }
 
                 let secret: Secret = values[0].to_string();
                 let payload_str: String = values[1].to_string();
                 let signature: Signature = values[2].to_string();
 
-                let payload = <$payload>::from_str(&payload_str)
-                    .map_err(|_e| TokenCreationError::InvalidPayload)?;
+                let payload =
+                    <$payload>::from_str(&payload_str).map_err(|e| TokenError::Payload(e))?;
 
                 Ok(Self {
                     secret,
@@ -52,59 +56,52 @@ macro_rules! impl_token {
 }
 pub(crate) use impl_token;
 
-#[derive(Error, Debug)]
-pub enum TokenCreationError {
-    #[error("Could not parse input")]
+#[derive(Error, Display, Debug)]
+pub enum TokenError {
     InvalidInput,
-    #[error("Could not parse input correctly")]
-    InvalidPayload,
+    Payload(#[from] PayloadError),
 }
+
 macro_rules! impl_payload {
     ($payload:ty, $exp:ident) => {
-        use base64::prelude::BASE64_URL_SAFE_NO_PAD;
-        use base64::Engine;
-        use chrono::Local;
-        use $crate::auth::token::PayloadCreationError;
-
-        impl FromStr for $payload {
-            type Err = PayloadCreationError;
+        impl std::str::FromStr for $payload {
+            type Err = $crate::auth::token::PayloadError;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
-                let json = BASE64_URL_SAFE_NO_PAD.decode(s);
-                if json.is_err() {
-                    return Err(PayloadCreationError::InvalidBase64);
-                }
+                use base64::Engine;
+                use $crate::auth::token::PayloadError;
 
-                let str = String::from_iter(json.unwrap().into_iter().map(|x| x as char));
-                if let Ok(token) = serde_json::from_str(&str) {
-                    return Ok(token);
-                }
-                Err(PayloadCreationError::InvalidJson)
+                let json = base64::prelude::BASE64_URL_SAFE_NO_PAD
+                    .decode(s)
+                    .map_err(|e| PayloadError::from(e))?;
+
+                let str = String::from_iter(json.into_iter().map(|x| x as char));
+                serde_json::from_str(&str).map_err(|e| PayloadError::from(e))
             }
         }
 
         impl $payload {
             fn encode(&self) -> String {
+                use base64::Engine;
+
                 let data = serde_json::to_string(self).unwrap();
 
                 let mut buf = String::new();
-                BASE64_URL_SAFE_NO_PAD.encode_string(data, &mut buf);
+                base64::prelude::BASE64_URL_SAFE_NO_PAD.encode_string(data, &mut buf);
 
                 buf
             }
 
             fn expires_in(&self) -> i64 {
-                Local::now().timestamp() - self.$exp
+                chrono::Local::now().timestamp() - self.$exp
             }
         }
     };
 }
 pub(crate) use impl_payload;
 
-#[derive(Debug, Error)]
-pub enum PayloadCreationError {
-    #[error("Input is not valid Base64")]
-    InvalidBase64,
-    #[error("Could not parse Base64 input correctly")]
-    InvalidJson,
+#[derive(Error, Display, Debug)]
+pub enum PayloadError {
+    Base64(#[from] base64::DecodeError),
+    Json(#[from] serde_json::Error),
 }

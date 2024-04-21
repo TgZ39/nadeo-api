@@ -1,4 +1,5 @@
 use crate::client::NADEO_REFRESH_URL;
+use crate::{Error, Result};
 use reqwest::header::{HeaderMap, USER_AGENT};
 use reqwest::Client;
 use serde_json::{json, Value};
@@ -25,7 +26,7 @@ pub struct AuthInfo {
 }
 
 impl AuthInfo {
-    pub async fn refresh(&mut self, client: &Client) -> anyhow::Result<()> {
+    pub async fn refresh(&mut self, client: &Client) -> Result<()> {
         let mut headers = HeaderMap::new();
 
         // format refresh token
@@ -45,8 +46,9 @@ impl AuthInfo {
             .headers(headers)
             .json(&body)
             .send()
-            .await?;
-        let json = res.json::<Value>().await?;
+            .await
+            .map_err(Error::from)?;
+        let json = res.json::<Value>().await.map_err(Error::from)?;
 
         let access_token = AccessToken::from_str(json["accessToken"].as_str().unwrap())?;
         let refresh_token = RefreshToken::from_str(json["refreshToken"].as_str().unwrap())?;

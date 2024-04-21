@@ -1,6 +1,7 @@
 use crate::auth::{AuthInfo, Service};
 use crate::client::client_builder::NadeoClientBuilder;
 use crate::request::{HttpMethod, NadeoRequest};
+use crate::Result;
 use reqwest::Response;
 
 pub mod client_builder;
@@ -26,7 +27,7 @@ impl NadeoClient {
         NadeoClientBuilder::default()
     }
 
-    pub async fn execute(&mut self, request: NadeoRequest) -> anyhow::Result<Response> {
+    pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
         match request.service {
             Service::NadeoServices => {
                 if self.normal_auth.expires_in() < EXPIRATION_TIME_BUFFER {
@@ -65,7 +66,7 @@ impl NadeoClient {
         Ok(res)
     }
 
-    pub async fn refresh_tokens(&mut self) -> anyhow::Result<()> {
+    pub async fn refresh_tokens(&mut self) -> Result<()> {
         self.normal_auth.refresh(&self.client).await?;
         self.live_auth.refresh(&self.client).await?;
 

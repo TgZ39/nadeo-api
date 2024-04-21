@@ -1,5 +1,4 @@
 use crate::auth::token::{impl_payload, impl_token, Secret, Signature};
-use core::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

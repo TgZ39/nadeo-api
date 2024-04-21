@@ -18,3 +18,4 @@ thiserror = "1.0.58"
 chrono = "0.4.38"
 strum = { version = "0.26.2", features = ["strum_macros", "derive"] }
 uuid = { version = "1.8.0", features = ["v4"] }
+derive_more = "0.99.17"

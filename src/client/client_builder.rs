@@ -2,14 +2,13 @@ use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
 use crate::auth::{AuthInfo, Service};
 use crate::client::{NadeoClient, NADEO_AUTH_URL, UBISOFT_APP_ID};
-use anyhow::Error;
+use crate::{Error, Result};
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use reqwest::header::HeaderMap;
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::str::FromStr;
-use thiserror::Error;
 
 const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
 const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
@@ -33,7 +32,7 @@ impl Default for NadeoClientBuilder {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum ClientCreationError {
     #[error("No email was provided")]
     MissingEMail,
@@ -54,7 +53,7 @@ impl NadeoClientBuilder {
         self
     }
 
-    pub async fn build(self) -> anyhow::Result<NadeoClient> {
+    pub async fn build(self) -> Result<NadeoClient> {
         if self.email.is_none() {
             return Err(Error::from(ClientCreationError::MissingEMail));
         }
@@ -80,11 +79,7 @@ impl NadeoClientBuilder {
     }
 }
 
-async fn get_ubi_auth_ticket(
-    email: &str,
-    password: &str,
-    client: &Client,
-) -> anyhow::Result<String> {
+async fn get_ubi_auth_ticket(email: &str, password: &str, client: &Client) -> Result<String> {
     let mut headers = HeaderMap::new();
 
     headers.insert("Content-Type", "application/json".parse().unwrap());
@@ -100,7 +95,6 @@ async fn get_ubi_auth_ticket(
 
         format!("Basic {b64}")
     };
-
     headers.insert("Authorization", ubi_auth_token.parse().unwrap());
 
     // get ubisoft ticket
@@ -108,7 +102,8 @@ async fn get_ubi_auth_ticket(
         .post(UBISOFT_AUTH_URL)
         .headers(headers)
         .send()
-        .await?;
+        .await?
+        .error_for_status()?;
 
     let json = res.json::<Value>().await?;
     let ticket = json["ticket"].as_str().unwrap().to_string();
@@ -116,11 +111,7 @@ async fn get_ubi_auth_ticket(
     Ok(ticket)
 }
 
-async fn get_nadeo_auth_token(
-    service: Service,
-    ticket: &str,
-    client: &Client,
-) -> anyhow::Result<AuthInfo> {
+async fn get_nadeo_auth_token(service: Service, ticket: &str, client: &Client) -> Result<AuthInfo> {
     let mut headers = HeaderMap::new();
     headers.insert("Content-Type", "application/json".parse().unwrap());
 
@@ -140,7 +131,8 @@ async fn get_nadeo_auth_token(
         .headers(headers)
         .json(&body)
         .send()
-        .await?;
+        .await?
+        .error_for_status()?;
 
     let json = res.json::<Value>().await?;
 

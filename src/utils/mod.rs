@@ -12,7 +12,7 @@ pub fn to_list(list: &[String]) -> String {
 #[macro_export]
 macro_rules! execute_into {
     ($client:expr; $request:expr; $format:ty) => {{
-        async fn get(client: &mut NadeoClient, request: NadeoRequest) -> anyhow::Result<$format> {
+        async fn get(client: &mut NadeoClient, request: NadeoRequest) -> $crate::Result<$format> {
             let res = client.execute(request).await?;
             let out = res.json::<$format>().await?;
 
