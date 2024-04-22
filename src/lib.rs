@@ -8,4 +8,3 @@ pub use error::{Error, Result};
 
 pub use client::NadeoClient;
 pub use request::request_builder::NadeoRequestBuilder as RequestBuilder;
-pub use request::NadeoRequest;

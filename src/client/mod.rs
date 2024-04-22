@@ -29,17 +29,9 @@ impl NadeoClient {
 
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
         match request.service {
-            Service::NadeoServices => {
-                if self.normal_auth.expires_in() < EXPIRATION_TIME_BUFFER {
-                    self.normal_auth.refresh(&self.client).await?;
-                }
-            }
-            Service::NadeoLiveServices => {
-                if self.live_auth.expires_in() < EXPIRATION_TIME_BUFFER {
-                    self.live_auth.refresh(&self.client).await?;
-                }
-            }
-        }
+            Service::NadeoServices => self.normal_auth.refresh(&self.client).await?,
+            Service::NadeoLiveServices => self.live_auth.refresh(&self.client).await?,
+        };
 
         let auth_token = {
             let token = match request.service {
@@ -64,12 +56,5 @@ impl NadeoClient {
             .await?
             .error_for_status()?;
         Ok(res)
-    }
-
-    pub async fn refresh_tokens(&mut self) -> Result<()> {
-        self.normal_auth.refresh(&self.client).await?;
-        self.live_auth.refresh(&self.client).await?;
-
-        Ok(())
     }
 }

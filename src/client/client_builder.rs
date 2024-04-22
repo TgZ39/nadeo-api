@@ -5,10 +5,12 @@ use crate::client::{NadeoClient, NADEO_AUTH_URL, UBISOFT_APP_ID};
 use crate::{Error, Result};
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
+use futures::future::join;
 use reqwest::header::HeaderMap;
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::str::FromStr;
+use strum::Display;
 
 const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
 const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
@@ -32,11 +34,9 @@ impl Default for NadeoClientBuilder {
     }
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Display)]
 pub enum ClientBuilderError {
-    #[error("No email was provided")]
     MissingEMail,
-    #[error("No password was provided")]
     MissingPassword,
 }
 
@@ -65,16 +65,16 @@ impl NadeoClientBuilder {
         let ticket =
             get_ubi_auth_ticket(&self.email.unwrap(), &self.password.unwrap(), &self.client)
                 .await?;
+        let normal_auth_fut = get_nadeo_auth_token(Service::NadeoServices, &ticket, &self.client);
+        let live_auth_fut = get_nadeo_auth_token(Service::NadeoLiveServices, &ticket, &self.client);
 
-        let normal_auth =
-            get_nadeo_auth_token(Service::NadeoServices, &ticket, &self.client).await?;
-        let live_auth =
-            get_nadeo_auth_token(Service::NadeoLiveServices, &ticket, &self.client).await?;
+        // execute 2 futures concurrently
+        let (normal_auth, live_auth) = join(normal_auth_fut, live_auth_fut).await;
 
         Ok(NadeoClient {
             client: self.client,
-            normal_auth,
-            live_auth,
+            normal_auth: normal_auth?,
+            live_auth: live_auth?,
         })
     }
 }

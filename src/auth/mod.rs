@@ -1,4 +1,4 @@
-use crate::client::NADEO_REFRESH_URL;
+use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_REFRESH_URL};
 use crate::{Error, Result};
 use reqwest::header::{HeaderMap, USER_AGENT};
 use reqwest::Client;
@@ -26,7 +26,7 @@ pub struct AuthInfo {
 }
 
 impl AuthInfo {
-    pub async fn refresh(&mut self, client: &Client) -> Result<()> {
+    pub(crate) async fn force_refresh(&mut self, client: &Client) -> Result<()> {
         let mut headers = HeaderMap::new();
 
         // format refresh token
@@ -48,6 +48,7 @@ impl AuthInfo {
             .send()
             .await
             .map_err(Error::from)?;
+
         let json = res.json::<Value>().await.map_err(Error::from)?;
 
         let access_token = AccessToken::from_str(json["accessToken"].as_str().unwrap())?;
@@ -57,6 +58,14 @@ impl AuthInfo {
         self.refresh_token = refresh_token;
 
         Ok(())
+    }
+
+    pub(crate) async fn refresh(&mut self, client: &Client) -> Result<bool> {
+        if !self.expires_in() < EXPIRATION_TIME_BUFFER {
+            return Ok(false);
+        }
+
+        self.force_refresh(client).await.map(|_| true)
     }
 
     pub fn expires_in(&self) -> i64 {
