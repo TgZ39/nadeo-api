@@ -4,7 +4,6 @@ use crate::{Error, Result};
 use derive_more::Display;
 use reqwest::header::{HeaderMap, IntoHeaderName};
 
-
 /// Used for creating [NadeoRequest](NadeoRequest)s.
 pub struct NadeoRequestBuilder {
     service: Option<Service>,
