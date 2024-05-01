@@ -19,6 +19,15 @@ const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/s
 const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
 pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 
+/// This client can execute [NadeoRequest](NadeoRequest)s and handles authentication. OAuth is not supported.
+///
+/// # Examples
+///
+/// Creating a client.
+/// ```rust
+/// # use nadeo_api::NadeoClient;
+/// let mut client = NadeoClient::new("my_email", "my_password").await?;
+/// ```
 #[derive(Debug)]
 pub struct NadeoClient {
     pub(crate) client: Client,
@@ -27,6 +36,7 @@ pub struct NadeoClient {
 }
 
 impl NadeoClient {
+    /// Creates a new [Client](NadeoClient) and gets the authtoken for *NadeoServices* and *NadeoLiveServices*.
     pub async fn new(email: &str, password: &str) -> Result<Self> {
         let client = Client::new();
 
@@ -44,6 +54,28 @@ impl NadeoClient {
         })
     }
 
+    /// Executes a [NadeoRequest](NadeoRequest) on the given [NadeoClient](NadeoClient). For more information about the API endpoints look [here](https://webservices.openplanet.dev/).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use nadeo_api::auth::Service;
+    /// # use nadeo_api::NadeoClient;
+    /// # use nadeo_api::request::{HttpMethod, NadeoRequest};
+    ///
+    /// // create client
+    /// let mut client = NadeoClient::new("my_email", "my_password").await?;
+    ///
+    /// // build request
+    /// let request = NadeoRequest::builder()
+    ///     .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578".to_string())
+    ///     .service(Service::NadeoServices)
+    ///     .http_method(HttpMethod::Get)
+    ///     .build()?;
+    ///
+    /// // execute request
+    /// let response = client.execute(request).await?;
+    /// ```
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
         match request.service {
             Service::NadeoServices => self.normal_auth.refresh(&self.client).await?,

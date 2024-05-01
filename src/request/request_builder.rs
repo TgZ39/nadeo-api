@@ -4,6 +4,8 @@ use crate::{Error, Result};
 use derive_more::Display;
 use reqwest::header::{HeaderMap, IntoHeaderName};
 
+
+/// Used for creating [NadeoRequest](NadeoRequest)s.
 pub struct NadeoRequestBuilder {
     service: Option<Service>,
     url: Option<String>,
@@ -53,6 +55,8 @@ impl NadeoRequestBuilder {
         self
     }
 
+    /// Converts the `NadeoRequestBuilder` into a [NadeoRequest](NadeoRequest).
+    /// The `URL`, `HttpMethod` and `Service` are required for a request.
     pub fn build(self) -> Result<NadeoRequest> {
         if self.url.is_none() {
             return Err(Error::from(RequestBuilderError::MissingUrl));
