@@ -1,12 +1,11 @@
+use crate::auth::token::access_token::AccessToken;
+use crate::auth::token::refresh_token::RefreshToken;
 use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_REFRESH_URL};
 use crate::{Error, Result};
 use reqwest::header::{HeaderMap, USER_AGENT};
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::str::FromStr;
-
-pub use token::access_token::AccessToken;
-pub use token::refresh_token::RefreshToken;
 
 pub mod token;
 
@@ -19,7 +18,7 @@ pub enum Service {
 }
 
 #[derive(Debug, Clone)]
-pub struct AuthInfo {
+pub(crate) struct AuthInfo {
     pub service: Service,
     pub access_token: AccessToken,
     pub refresh_token: RefreshToken,
@@ -68,7 +67,7 @@ impl AuthInfo {
         self.force_refresh(client).await.map(|_| true)
     }
 
-    pub fn expires_in(&self) -> i64 {
+    pub(crate) fn expires_in(&self) -> i64 {
         self.access_token.expires_in()
     }
 }

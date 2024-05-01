@@ -1,30 +1,47 @@
+use crate::auth::token::access_token::AccessToken;
+use crate::auth::token::refresh_token::RefreshToken;
 use crate::auth::{AuthInfo, Service};
-use crate::client::client_builder::NadeoClientBuilder;
-use crate::request::{HttpMethod, NadeoRequest};
+use crate::request::{HeaderMap, HttpMethod, NadeoRequest};
 use crate::Result;
-use reqwest::Response;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
+use futures::future::join;
+use reqwest::{Client, Response};
+use serde_json::{json, Value};
+use std::str::FromStr;
 
-pub mod client_builder;
-
-pub const NADEO_AUTH_URL: &str =
+pub(crate) const NADEO_AUTH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/ubiservices";
-pub const NADEO_REFRESH_URL: &str =
+pub(crate) const NADEO_REFRESH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/refresh";
-
-pub const UBISOFT_APP_ID: &str = "86263886-327a-4328-ac69-527f0d20a237";
-
-pub const EXPIRATION_TIME_BUFFER: i64 = 60;
+pub(crate) const UBISOFT_APP_ID: &str = "86263886-327a-4328-ac69-527f0d20a237";
+const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
+const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
+pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 
 #[derive(Debug)]
 pub struct NadeoClient {
-    pub client: reqwest::Client,
-    pub normal_auth: AuthInfo,
-    pub live_auth: AuthInfo,
+    pub(crate) client: Client,
+    pub(crate) normal_auth: AuthInfo,
+    pub(crate) live_auth: AuthInfo,
 }
 
 impl NadeoClient {
-    pub fn builder() -> NadeoClientBuilder {
-        NadeoClientBuilder::default()
+    pub async fn new(email: &str, password: &str) -> Result<Self> {
+        let client = Client::new();
+
+        let ticket = get_ubi_auth_ticket(email, password, &client).await?;
+        let normal_auth_fut = get_nadeo_auth_token(Service::NadeoServices, &ticket, &client);
+        let live_auth_fut = get_nadeo_auth_token(Service::NadeoLiveServices, &ticket, &client);
+
+        // execute 2 futures concurrently
+        let (normal_auth, live_auth) = join(normal_auth_fut, live_auth_fut).await;
+
+        Ok(NadeoClient {
+            client,
+            normal_auth: normal_auth?,
+            live_auth: live_auth?,
+        })
     }
 
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
@@ -57,4 +74,79 @@ impl NadeoClient {
             .error_for_status()?;
         Ok(res)
     }
+}
+
+pub(crate) async fn get_ubi_auth_ticket(
+    email: &str,
+    password: &str,
+    client: &Client,
+) -> Result<String> {
+    let mut headers = HeaderMap::new();
+
+    headers.insert("Content-Type", "application/json".parse().unwrap());
+    headers.insert("Ubi-AppId", UBISOFT_APP_ID.parse().unwrap());
+    headers.insert("User-Agent", USER_AGENT.parse().unwrap());
+
+    let ubi_auth_token = {
+        let auth = format!("{}:{}", email, password);
+        let auth = auth.as_bytes();
+
+        let mut b64 = String::new();
+        BASE64_STANDARD.encode_string(auth, &mut b64);
+
+        format!("Basic {b64}")
+    };
+    headers.insert("Authorization", ubi_auth_token.parse().unwrap());
+
+    // get ubisoft ticket
+    let res = client
+        .post(UBISOFT_AUTH_URL)
+        .headers(headers)
+        .send()
+        .await?
+        .error_for_status()?;
+
+    let json = res.json::<Value>().await?;
+    let ticket = json["ticket"].as_str().unwrap().to_string();
+
+    Ok(ticket)
+}
+
+pub(crate) async fn get_nadeo_auth_token(
+    service: Service,
+    ticket: &str,
+    client: &Client,
+) -> Result<AuthInfo> {
+    let mut headers = HeaderMap::new();
+    headers.insert("Content-Type", "application/json".parse().unwrap());
+
+    let auth_token = format!("ubi_v1 t={}", ticket);
+    headers.insert("Authorization", auth_token.parse().unwrap());
+    headers.insert("User-Agent", USER_AGENT.parse().unwrap());
+
+    let body = json!(
+        {
+            "audience": service.to_string()
+        }
+    );
+
+    // get nadeo auth token
+    let res = client
+        .post(NADEO_AUTH_URL)
+        .headers(headers)
+        .json(&body)
+        .send()
+        .await?
+        .error_for_status()?;
+
+    let json = res.json::<Value>().await?;
+
+    let access_token = AccessToken::from_str(json["accessToken"].as_str().unwrap())?;
+    let refresh_token = RefreshToken::from_str(json["refreshToken"].as_str().unwrap())?;
+
+    Ok(AuthInfo {
+        service,
+        access_token,
+        refresh_token,
+    })
 }

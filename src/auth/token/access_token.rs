@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AccessToken {
+pub(crate) struct AccessToken {
     secret: String,
     payload: AccessPayload,
     signature: String,
@@ -52,7 +52,7 @@ impl AccessToken {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AccessPayload {
+pub(crate) struct AccessPayload {
     jti: String,
     iss: String,
     iat: i64,
