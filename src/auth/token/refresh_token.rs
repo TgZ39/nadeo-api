@@ -107,6 +107,6 @@ impl RefreshPayload {
 
     /// Returns the amount of **seconds** until the refresh token expires.
     pub(crate) fn expires_in(&self) -> i64 {
-        Local::now().timestamp() - self.exp
+        self.exp - Local::now().timestamp()
     }
 }

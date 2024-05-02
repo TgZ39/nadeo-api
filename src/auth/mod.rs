@@ -1,14 +1,20 @@
 use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
-use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_REFRESH_URL};
-use crate::{Error, Result};
-use reqwest::header::{HeaderMap, USER_AGENT};
+use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_AUTH_URL, NADEO_REFRESH_URL, UBISOFT_APP_ID};
+use crate::{client, Error, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use base64::Engine;
+use reqwest::header::HeaderMap;
 
 pub mod token;
+pub mod o_auth;
+
+const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
+const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
 
 /// Defines Service which is used to authenticate with the Nadeo API.
 #[derive(strum::Display, Debug, Clone, Copy, Serialize, Deserialize)]
@@ -17,6 +23,7 @@ pub enum Service {
     NadeoServices,
     #[strum(to_string = "NadeoLiveServices")]
     NadeoLiveServices,
+    OAuth
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +34,41 @@ pub(crate) struct AuthInfo {
 }
 
 impl AuthInfo {
+    pub(crate) async fn new(service: Service, ticket: &str, client: &Client) -> Result<Self> {
+        let mut headers = HeaderMap::new();
+        headers.insert("Content-Type", "application/json".parse().unwrap());
+
+        let auth_token = format!("ubi_v1 t={}", ticket);
+        headers.insert("Authorization", auth_token.parse().unwrap());
+        headers.insert("User-Agent", USER_AGENT.parse().unwrap());
+
+        let body = json!(
+            {
+                "audience": service.to_string()
+            }
+        );
+
+        // get nadeo auth token
+        let res = client
+            .post(NADEO_AUTH_URL)
+            .headers(headers)
+            .json(&body)
+            .send()
+            .await?
+            .error_for_status()?;
+
+        let json = res.json::<Value>().await?;
+
+        let access_token = AccessToken::from_str(json["accessToken"].as_str().unwrap())?;
+        let refresh_token = RefreshToken::from_str(json["refreshToken"].as_str().unwrap())?;
+
+        Ok(Self {
+            service,
+            access_token,
+            refresh_token,
+        })
+    }
+
     /// Forces a refresh request with the Nadeo API. [`refresh`] should be preferred over `force_refresh` in most cases.
     ///
     /// [`refresh`]: AuthInfo::refresh
@@ -85,4 +127,40 @@ impl AuthInfo {
     pub(crate) fn expires_in(&self) -> i64 {
         self.access_token.expires_in()
     }
+}
+
+pub(crate) async fn get_ubi_auth_ticket(
+    email: &str,
+    password: &str,
+    client: &Client,
+) -> Result<String> {
+    let mut headers = HeaderMap::new();
+
+    headers.insert("Content-Type", "application/json".parse().unwrap());
+    headers.insert("Ubi-AppId", UBISOFT_APP_ID.parse().unwrap());
+    headers.insert("User-Agent", USER_AGENT.parse().unwrap());
+
+    let ubi_auth_token = {
+        let auth = format!("{}:{}", email, password);
+        let auth = auth.as_bytes();
+
+        let mut b64 = String::new();
+        BASE64_STANDARD.encode_string(auth, &mut b64);
+
+        format!("Basic {b64}")
+    };
+    headers.insert("Authorization", ubi_auth_token.parse().unwrap());
+
+    // get ubisoft ticket
+    let res = client
+        .post(UBISOFT_AUTH_URL)
+        .headers(headers)
+        .send()
+        .await?
+        .error_for_status()?;
+
+    let json = res.json::<Value>().await?;
+    let ticket = json["ticket"].as_str().unwrap().to_string();
+
+    Ok(ticket)
 }

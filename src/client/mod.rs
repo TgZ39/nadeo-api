@@ -2,21 +2,24 @@ use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
 use crate::auth::{AuthInfo, Service};
 use crate::request::{HeaderMap, HttpMethod, NadeoRequest};
-use crate::Result;
+use crate::{auth, Error, Result};
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use futures::future::join;
 use reqwest::{Client, Response};
 use serde_json::{json, Value};
 use std::str::FromStr;
+use strum::Display;
+use thiserror::Error;
+use crate::auth::o_auth::OAuthInfo;
+
+pub mod client_builder;
 
 pub(crate) const NADEO_AUTH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/ubiservices";
 pub(crate) const NADEO_REFRESH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/refresh";
 pub(crate) const UBISOFT_APP_ID: &str = "86263886-327a-4328-ac69-527f0d20a237";
-const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
-const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
 pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 
 /// This client can execute [`NadeoRequest`]s and handles authentication. OAuth is not supported.
@@ -33,8 +36,9 @@ pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 #[derive(Debug, Clone)]
 pub struct NadeoClient {
     pub(crate) client: Client,
-    pub(crate) normal_auth: AuthInfo,
-    pub(crate) live_auth: AuthInfo,
+    pub(crate) normal_auth: Option<AuthInfo>,
+    pub(crate) live_auth: Option<AuthInfo>,
+    pub(crate) o_auth: Option<OAuthInfo>
 }
 
 impl NadeoClient {
@@ -46,17 +50,18 @@ impl NadeoClient {
     pub async fn new(email: &str, password: &str) -> Result<Self> {
         let client = Client::new();
 
-        let ticket = get_ubi_auth_ticket(email, password, &client).await?;
-        let normal_auth_fut = get_nadeo_auth_token(Service::NadeoServices, &ticket, &client);
-        let live_auth_fut = get_nadeo_auth_token(Service::NadeoLiveServices, &ticket, &client);
+        let ticket = auth::get_ubi_auth_ticket(email, password, &client).await?;
+        let normal_auth_fut = AuthInfo::new(Service::NadeoServices, &ticket, &client);
+        let live_auth_fut = AuthInfo::new(Service::NadeoLiveServices, &ticket, &client);
 
         // execute 2 futures concurrently
         let (normal_auth, live_auth) = join(normal_auth_fut, live_auth_fut).await;
 
         Ok(NadeoClient {
             client,
-            normal_auth: normal_auth?,
-            live_auth: live_auth?,
+            normal_auth: None,
+            live_auth: None,
+            o_auth: None
         })
     }
 
@@ -93,18 +98,64 @@ impl NadeoClient {
     /// [`NadeoClient`]: NadeoClient
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
         match request.service {
-            Service::NadeoServices => self.normal_auth.refresh(&self.client).await?,
-            Service::NadeoLiveServices => self.live_auth.refresh(&self.client).await?,
+            Service::NadeoServices => {
+                if let Some(auth) = &mut self.o_auth {
+                    auth.refresh(&self.client).await?;
+                } else {
+                    return Err(Error::from(ClientError::MissingNormalAuth))
+                }
+            },
+            Service::NadeoLiveServices => {
+                if let Some(auth) = &mut self.live_auth {
+                    auth.refresh(&self.client).await?;
+                } else {
+                    return Err(Error::from(ClientError::MissingNormalAuth))
+                }
+            },
+            Service::OAuth => {
+                if let Some(auth) = &mut self.o_auth {
+                    auth.refresh(&self.client).await?;
+                } else {
+                    return Err(Error::from(ClientError::MissingOAuth))
+                }
+            }
         };
 
-        let auth_token = {
-            let token = match request.service {
-                Service::NadeoServices => self.normal_auth.access_token.clone(),
-                Service::NadeoLiveServices => self.live_auth.access_token.clone(),
-            };
-
-            format!("nadeo_v1 t={}", token.encode())
+        let token = match request.service {
+            Service::NadeoServices => {
+                if let Some(token) = &self.normal_auth {
+                    Some(token.access_token.clone().encode())
+                } else {
+                    None
+                }
+            },
+            Service::NadeoLiveServices => {
+                if let Some(token) = &self.live_auth {
+                    Some(token.access_token.clone().encode())
+                } else {
+                    None
+                }
+            },
+            Service::OAuth => {
+                if let Some(token) = &self.o_auth {
+                    Some(token.access_token.clone())
+                } else {
+                    None
+                }
+            }
         };
+        if token.is_none() {
+            return match request.service {
+                Service::NadeoServices | Service::NadeoLiveServices => {
+                    Err(Error::from(ClientError::MissingNormalAuth))
+                },
+                Service::OAuth => {
+                    Err(Error::from(ClientError::MissingOAuth))
+                }
+            }
+        }
+
+        let auth_token = format!("nadeo_v1 t={}", token.unwrap());
 
         let mut headers = request.headers;
         headers.insert("Authorization", auth_token.parse().unwrap());
@@ -112,6 +163,10 @@ impl NadeoClient {
         let api_request = match request.method {
             HttpMethod::Get => self.client.get(request.url),
             HttpMethod::Post => self.client.post(request.url),
+            HttpMethod::Put => self.client.put(request.url),
+            HttpMethod::Patch => self.client.patch(request.url),
+            HttpMethod::Delete => self.client.delete(request.url),
+            HttpMethod::Head => self.client.head(request.url)
         };
 
         let res = api_request
@@ -123,77 +178,10 @@ impl NadeoClient {
     }
 }
 
-pub(crate) async fn get_ubi_auth_ticket(
-    email: &str,
-    password: &str,
-    client: &Client,
-) -> Result<String> {
-    let mut headers = HeaderMap::new();
-
-    headers.insert("Content-Type", "application/json".parse().unwrap());
-    headers.insert("Ubi-AppId", UBISOFT_APP_ID.parse().unwrap());
-    headers.insert("User-Agent", USER_AGENT.parse().unwrap());
-
-    let ubi_auth_token = {
-        let auth = format!("{}:{}", email, password);
-        let auth = auth.as_bytes();
-
-        let mut b64 = String::new();
-        BASE64_STANDARD.encode_string(auth, &mut b64);
-
-        format!("Basic {b64}")
-    };
-    headers.insert("Authorization", ubi_auth_token.parse().unwrap());
-
-    // get ubisoft ticket
-    let res = client
-        .post(UBISOFT_AUTH_URL)
-        .headers(headers)
-        .send()
-        .await?
-        .error_for_status()?;
-
-    let json = res.json::<Value>().await?;
-    let ticket = json["ticket"].as_str().unwrap().to_string();
-
-    Ok(ticket)
-}
-
-pub(crate) async fn get_nadeo_auth_token(
-    service: Service,
-    ticket: &str,
-    client: &Client,
-) -> Result<AuthInfo> {
-    let mut headers = HeaderMap::new();
-    headers.insert("Content-Type", "application/json".parse().unwrap());
-
-    let auth_token = format!("ubi_v1 t={}", ticket);
-    headers.insert("Authorization", auth_token.parse().unwrap());
-    headers.insert("User-Agent", USER_AGENT.parse().unwrap());
-
-    let body = json!(
-        {
-            "audience": service.to_string()
-        }
-    );
-
-    // get nadeo auth token
-    let res = client
-        .post(NADEO_AUTH_URL)
-        .headers(headers)
-        .json(&body)
-        .send()
-        .await?
-        .error_for_status()?;
-
-    let json = res.json::<Value>().await?;
-
-    let access_token = AccessToken::from_str(json["accessToken"].as_str().unwrap())?;
-    let refresh_token = RefreshToken::from_str(json["refreshToken"].as_str().unwrap())?;
-
-    Ok(AuthInfo {
-        service,
-        access_token,
-        refresh_token,
-    })
+#[derive(Error, Debug)]
+pub enum ClientError {
+    #[error("Client does not have credentials for NadeoServices or NadeoLiveServices")]
+    MissingNormalAuth,
+    #[error("Client does not have OAuth credentials")]
+    MissingOAuth
 }

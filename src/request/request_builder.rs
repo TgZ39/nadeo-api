@@ -68,7 +68,7 @@ impl NadeoRequestBuilder {
         self
     }
 
-    /// Converts the `NadeoRequestBuilder` into a [NadeoRequest].
+    /// Converts the `NadeoRequestBuilder` into a [`NadeoRequest`].
     /// The `URL`, [`HttpMethod`] and [`Service`] are required for a request.
     ///
     /// [`NadeoRequest`]: NadeoRequest
