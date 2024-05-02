@@ -14,5 +14,5 @@ Usage
 Add this to your dependencies in the `Cargo.toml`:
 
 ```toml
-nadeo-api = { git = "https://www.github.com/TgZ39/nadeo-api" }
+nadeo-api = "*"
 ```
