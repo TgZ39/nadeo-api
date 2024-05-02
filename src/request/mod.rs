@@ -56,5 +56,5 @@ pub enum HttpMethod {
     Put,
     Patch,
     Delete,
-    Head
+    Head,
 }

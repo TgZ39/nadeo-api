@@ -1,17 +1,17 @@
 use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
 use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_AUTH_URL, NADEO_REFRESH_URL, UBISOFT_APP_ID};
-use crate::{client, Error, Result};
+use crate::{Error, Result};
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use base64::Engine;
+use reqwest::header::HeaderMap;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
-use reqwest::header::HeaderMap;
 
-pub mod token;
 pub mod o_auth;
+pub mod token;
 
 const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
 const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
@@ -23,7 +23,7 @@ pub enum Service {
     NadeoServices,
     #[strum(to_string = "NadeoLiveServices")]
     NadeoLiveServices,
-    OAuth
+    OAuth,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,6 +105,7 @@ impl AuthInfo {
 
         Ok(())
     }
+
     /// Checks wether the token is expired. If it is [`force_refresh`] is called.
     /// If the refresh was successful `Ok(true)` is returned but if it fails `Err(Error)` is returned.
     /// If the token is not expired `Ok(false)` is returned and a token refresh is not attempted.

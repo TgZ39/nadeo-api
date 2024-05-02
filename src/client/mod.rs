@@ -1,17 +1,13 @@
-use crate::auth::token::access_token::AccessToken;
-use crate::auth::token::refresh_token::RefreshToken;
-use crate::auth::{AuthInfo, Service};
-use crate::request::{HeaderMap, HttpMethod, NadeoRequest};
-use crate::{auth, Error, Result};
-use base64::prelude::BASE64_STANDARD;
-use base64::Engine;
-use futures::future::join;
-use reqwest::{Client, Response};
-use serde_json::{json, Value};
-use std::str::FromStr;
-use strum::Display;
-use thiserror::Error;
 use crate::auth::o_auth::OAuthInfo;
+
+use crate::auth::{AuthInfo, Service};
+use crate::request::{HttpMethod, NadeoRequest};
+use crate::{Error, Result};
+
+use reqwest::{Client, Response};
+
+use crate::client::client_builder::NadeoClientBuilder;
+use thiserror::Error;
 
 pub mod client_builder;
 
@@ -38,31 +34,12 @@ pub struct NadeoClient {
     pub(crate) client: Client,
     pub(crate) normal_auth: Option<AuthInfo>,
     pub(crate) live_auth: Option<AuthInfo>,
-    pub(crate) o_auth: Option<OAuthInfo>
+    pub(crate) o_auth: Option<OAuthInfo>,
 }
 
 impl NadeoClient {
-    /// Creates a new [Client](NadeoClient) and gets the authtoken for *NadeoServices* and *NadeoLiveServices*.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if there was an error while authenticating with the Nadeo API. For example when the provided E-Mail or password is incorrect.
-    pub async fn new(email: &str, password: &str) -> Result<Self> {
-        let client = Client::new();
-
-        let ticket = auth::get_ubi_auth_ticket(email, password, &client).await?;
-        let normal_auth_fut = AuthInfo::new(Service::NadeoServices, &ticket, &client);
-        let live_auth_fut = AuthInfo::new(Service::NadeoLiveServices, &ticket, &client);
-
-        // execute 2 futures concurrently
-        let (normal_auth, live_auth) = join(normal_auth_fut, live_auth_fut).await;
-
-        Ok(NadeoClient {
-            client,
-            normal_auth: None,
-            live_auth: None,
-            o_auth: None
-        })
+    pub fn builder() -> NadeoClientBuilder {
+        NadeoClientBuilder::default()
     }
 
     /// Executes a [`NadeoRequest`] on the given [`NadeoClient`]. For more information about the API endpoints look [here](https://webservices.openplanet.dev/).
@@ -97,68 +74,58 @@ impl NadeoClient {
     /// [`NadeoRequest`]: NadeoRequest
     /// [`NadeoClient`]: NadeoClient
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
+        // refresh tokens if required
         match request.service {
             Service::NadeoServices => {
                 if let Some(auth) = &mut self.o_auth {
                     auth.refresh(&self.client).await?;
                 } else {
-                    return Err(Error::from(ClientError::MissingNormalAuth))
+                    return Err(Error::from(ClientError::MissingNormalAuth));
                 }
-            },
+            }
             Service::NadeoLiveServices => {
                 if let Some(auth) = &mut self.live_auth {
                     auth.refresh(&self.client).await?;
                 } else {
-                    return Err(Error::from(ClientError::MissingNormalAuth))
+                    return Err(Error::from(ClientError::MissingNormalAuth));
                 }
-            },
+            }
             Service::OAuth => {
                 if let Some(auth) = &mut self.o_auth {
                     auth.refresh(&self.client).await?;
                 } else {
-                    return Err(Error::from(ClientError::MissingOAuth))
+                    return Err(Error::from(ClientError::MissingOAuth));
                 }
             }
         };
 
+        // get token
         let token = match request.service {
-            Service::NadeoServices => {
-                if let Some(token) = &self.normal_auth {
-                    Some(token.access_token.clone().encode())
-                } else {
-                    None
-                }
-            },
-            Service::NadeoLiveServices => {
-                if let Some(token) = &self.live_auth {
-                    Some(token.access_token.clone().encode())
-                } else {
-                    None
-                }
-            },
-            Service::OAuth => {
-                if let Some(token) = &self.o_auth {
-                    Some(token.access_token.clone())
-                } else {
-                    None
-                }
-            }
+            Service::NadeoServices => self
+                .normal_auth
+                .as_ref()
+                .map(|token| format!("nadeo_v1 t={}", token.access_token.encode())),
+            Service::NadeoLiveServices => self
+                .live_auth
+                .as_ref()
+                .map(|token| format!("nadeo_v1 t={}", token.access_token.encode())),
+            Service::OAuth => self
+                .o_auth
+                .as_ref()
+                .map(|token| format!("Bearer {}", token.access_token)),
         };
+        // throw error if credentials are missing
         if token.is_none() {
             return match request.service {
                 Service::NadeoServices | Service::NadeoLiveServices => {
                     Err(Error::from(ClientError::MissingNormalAuth))
-                },
-                Service::OAuth => {
-                    Err(Error::from(ClientError::MissingOAuth))
                 }
-            }
+                Service::OAuth => Err(Error::from(ClientError::MissingOAuth)),
+            };
         }
 
-        let auth_token = format!("nadeo_v1 t={}", token.unwrap());
-
         let mut headers = request.headers;
-        headers.insert("Authorization", auth_token.parse().unwrap());
+        headers.insert("Authorization", token.unwrap().parse().unwrap());
 
         let api_request = match request.method {
             HttpMethod::Get => self.client.get(request.url),
@@ -166,7 +133,7 @@ impl NadeoClient {
             HttpMethod::Put => self.client.put(request.url),
             HttpMethod::Patch => self.client.patch(request.url),
             HttpMethod::Delete => self.client.delete(request.url),
-            HttpMethod::Head => self.client.head(request.url)
+            HttpMethod::Head => self.client.head(request.url),
         };
 
         let res = api_request
@@ -183,5 +150,5 @@ pub enum ClientError {
     #[error("Client does not have credentials for NadeoServices or NadeoLiveServices")]
     MissingNormalAuth,
     #[error("Client does not have OAuth credentials")]
-    MissingOAuth
+    MissingOAuth,
 }

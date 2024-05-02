@@ -1,15 +1,15 @@
-use std::collections::HashMap;
-use chrono::Local;
+use crate::client::EXPIRATION_TIME_BUFFER;
 use crate::Result;
+use chrono::Local;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use crate::client::EXPIRATION_TIME_BUFFER;
+use std::collections::HashMap;
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
 /// Contains information used for OAuth authentication
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OAuthInfo {
+pub(crate) struct OAuthInfo {
     #[serde(skip)]
     identifier: String,
     #[serde(skip)]
@@ -17,13 +17,13 @@ pub struct OAuthInfo {
     pub(crate) token_type: String,
     #[serde(skip)]
     pub(crate) exp: i64,
-    pub(crate) access_token: String
+    pub(crate) access_token: String,
 }
 
 impl OAuthInfo {
-    pub async fn new(identifier: &str, secret: &str, client: &Client) -> Result<Self> {
+    pub(crate) async fn new(identifier: &str, secret: &str, client: &Client) -> Result<Self> {
         let mut form = HashMap::new();
-        form.insert("grant_type","client_credentials");
+        form.insert("grant_type", "client_credentials");
         form.insert("client_id", identifier);
         form.insert("client_secret", secret);
 
@@ -54,7 +54,7 @@ impl OAuthInfo {
     pub(crate) async fn refresh(&mut self, client: &Client) -> Result<bool> {
         if self.expires_in() < EXPIRATION_TIME_BUFFER {
             self.force_refresh(client).await?;
-            return Ok(true)
+            return Ok(true);
         }
 
         Ok(false)

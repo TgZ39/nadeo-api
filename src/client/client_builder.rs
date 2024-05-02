@@ -1,28 +1,20 @@
+use crate::auth::o_auth::OAuthInfo;
+use crate::auth::{AuthInfo, Service};
 use crate::Result;
+use crate::{auth, Error, NadeoClient};
 use derive_more::{Display, Error};
 use futures::future::join;
 use reqwest::Client;
-use crate::{auth, Error, NadeoClient};
-use crate::auth::{AuthInfo, Service};
-use crate::auth::o_auth::OAuthInfo;
 
 type EMail = String;
 type Password = String;
 type Identifier = String;
 type Secret = String;
 
+#[derive(Debug, Clone, Default)]
 pub struct NadeoClientBuilder {
     normal_auth: Option<(EMail, Password)>,
-    o_auth: Option<(Identifier, Secret)>
-}
-
-impl Default for NadeoClientBuilder {
-    fn default() -> Self {
-        Self {
-            o_auth: None,
-            normal_auth: None
-        }
-    }
+    o_auth: Option<(Identifier, Secret)>,
 }
 
 impl NadeoClientBuilder {
@@ -48,6 +40,7 @@ impl NadeoClientBuilder {
         let mut normal_auth = None;
         let mut live_auth = None;
 
+        // request normal and live auth tokens
         if let Some(auth) = self.normal_auth {
             let ticket = auth::get_ubi_auth_ticket(&auth.0, &auth.1, &client).await?;
             let normal_auth_fut = AuthInfo::new(Service::NadeoServices, &ticket, &client);
@@ -62,6 +55,7 @@ impl NadeoClientBuilder {
 
         let mut o_auth = None;
 
+        // request oauth token
         if let Some(auth) = self.o_auth {
             let auth = OAuthInfo::new(&auth.0, &auth.1, &client).await?;
 
@@ -79,5 +73,5 @@ impl NadeoClientBuilder {
 
 #[derive(Error, Debug, Display)]
 pub enum NadeoClientBuilderError {
-    MissingCredentials
+    MissingCredentials,
 }
