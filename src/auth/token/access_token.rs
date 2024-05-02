@@ -1,4 +1,4 @@
-use crate::auth::token::TokenError;
+use crate::auth::token::ParseTokenError;
 use crate::Error;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -6,6 +6,7 @@ use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
+/// Deserialized version of the access token from an auth request with the Nadeo API.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct AccessToken {
     secret: String,
@@ -16,10 +17,11 @@ pub(crate) struct AccessToken {
 impl FromStr for AccessToken {
     type Err = Error;
 
+    /// Deserializes the access token returned from the auth request.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let values: Vec<_> = s.split_terminator('.').collect();
         if values.len() != 3 {
-            return Err(Error::Token(TokenError::InvalidInput));
+            return Err(Error::Token(ParseTokenError::InvalidInput));
         }
 
         let secret = values[0].to_string();
@@ -37,6 +39,7 @@ impl FromStr for AccessToken {
 }
 
 impl AccessToken {
+    /// Serializes the access token into the format required for API requests.
     pub(crate) fn encode(&self) -> String {
         format!(
             "{}.{}.{}",
@@ -46,11 +49,15 @@ impl AccessToken {
         )
     }
 
+    /// Returns the amount of **seconds** until the access token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.payload.expires_in()
     }
 }
 
+/// Deserialized version of the payload of an [`AccessToken`].
+///
+/// [`AccessToken`]: AccessToken
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct AccessPayload {
     jti: String,
@@ -72,17 +79,21 @@ pub(crate) struct AccessPayload {
 impl FromStr for AccessPayload {
     type Err = Error;
 
+    /// Deserializes the payload of an access token.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let json = BASE64_URL_SAFE_NO_PAD
             .decode(s)
-            .map_err(|e| Error::Token(TokenError::from(e)))?;
+            .map_err(|e| Error::Token(ParseTokenError::from(e)))?;
 
         let str = String::from_iter(json.into_iter().map(|x| x as char));
-        serde_json::from_str(&str).map_err(|e| Error::Token(TokenError::from(e)))
+        serde_json::from_str(&str).map_err(|e| Error::Token(ParseTokenError::from(e)))
     }
 }
 
 impl AccessPayload {
+    /// Serializes the payload (part of the [`AccessToken`]) into the format required for API requests.
+    ///
+    /// [`AccessToken`]: AccessToken
     pub(crate) fn encode(&self) -> String {
         let data = serde_json::to_string(self).unwrap();
 
@@ -91,6 +102,7 @@ impl AccessPayload {
         buf
     }
 
+    /// Returns the amount of **seconds** until the access token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         Local::now().timestamp() - self.exp
     }

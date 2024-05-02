@@ -4,14 +4,16 @@ use crate::request::request_builder::NadeoRequestBuilder;
 pub use reqwest::header::HeaderMap;
 pub use reqwest::Response;
 pub use reqwest::Url;
+use serde::{Deserialize, Serialize};
 
 pub mod request_builder;
 
-/// Contains information about an API request. NadeoRequests can be executed on an instance of a [NadeoClient](crate::client::NadeoClient).
-/// If you want to create a request use the [NadeoRequestBuilder](NadeoRequestBuilder) with `NadeoRequest::builder()`.
+/// Contains information about an API request. NadeoRequests can be executed on an instance of a [`NadeoClient`].
+/// If you want to create a request use the [`NadeoRequestBuilder`] with `NadeoRequest::builder()`.
 ///
 /// # Examples
 ///
+/// Gets the clubtag of a player given the *accountID*.
 /// ```rust
 /// # use nadeo_api::auth::Service;
 /// # use nadeo_api::request::{HttpMethod, NadeoRequest};
@@ -26,7 +28,10 @@ pub mod request_builder;
 ///
 /// let response = client.execute(request).await?;
 /// ```
-#[derive(Debug)]
+///
+/// [`NadeoClient`]: crate::client::NadeoClient
+/// [`NadeoRequestBuilder`]: NadeoRequestBuilder
+#[derive(Debug, Clone)]
 pub struct NadeoRequest {
     pub(crate) service: Service,
     pub(crate) url: String,
@@ -35,13 +40,16 @@ pub struct NadeoRequest {
 }
 
 impl NadeoRequest {
-    /// Creates a new NadeoRequestBuilder. This is the only way of creating a [NadeoRequest](NadeoRequest).
+    /// Creates a new NadeoRequestBuilder. This is the only way of creating a [NadeoRequest].
+    ///
+    /// [`NadeoRequest`]: NadeoRequest
     pub fn builder() -> NadeoRequestBuilder {
         NadeoRequestBuilder::default()
     }
 }
 
-#[derive(Debug)]
+/// The HTTP method used for the API request.
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum HttpMethod {
     Get,
     Post,

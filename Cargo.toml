@@ -2,6 +2,11 @@
 name = "nadeo-api"
 version = "0.1.0"
 edition = "2021"
+license = "GPL-2"
+description = "An interface for working with the Nadeo API"
+repository = "https://www.github.com/TgZ39/nadeo-api"
+keywords = ["nadeo", "nadeo-api-client"]
+categories = ["api-bindings"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,5 +19,5 @@ serde_json = "1.0.116"
 thiserror = "1.0.59"
 chrono = "0.4.38"
 strum = { version = "0.26.2", features = ["strum_macros", "derive"] }
-derive_more = "1.0.0-beta.6"
+derive_more = "0.99.17"
 futures = "0.3.30"

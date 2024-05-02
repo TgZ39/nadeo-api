@@ -19,7 +19,7 @@ const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/s
 const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
 pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 
-/// This client can execute [NadeoRequest](NadeoRequest)s and handles authentication. OAuth is not supported.
+/// This client can execute [`NadeoRequest`]s and handles authentication. OAuth is not supported.
 ///
 /// # Examples
 ///
@@ -28,7 +28,9 @@ pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 /// # use nadeo_api::NadeoClient;
 /// let mut client = NadeoClient::new("my_email", "my_password").await?;
 /// ```
-#[derive(Debug)]
+///
+/// [`NadeoRequest`]: NadeoRequest
+#[derive(Debug, Clone)]
 pub struct NadeoClient {
     pub(crate) client: Client,
     pub(crate) normal_auth: AuthInfo,
@@ -37,6 +39,10 @@ pub struct NadeoClient {
 
 impl NadeoClient {
     /// Creates a new [Client](NadeoClient) and gets the authtoken for *NadeoServices* and *NadeoLiveServices*.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there was an error while authenticating with the Nadeo API. For example when the provided E-Mail or password is incorrect.
     pub async fn new(email: &str, password: &str) -> Result<Self> {
         let client = Client::new();
 
@@ -54,10 +60,15 @@ impl NadeoClient {
         })
     }
 
-    /// Executes a [NadeoRequest](NadeoRequest) on the given [NadeoClient](NadeoClient). For more information about the API endpoints look [here](https://webservices.openplanet.dev/).
+    /// Executes a [`NadeoRequest`] on the given [`NadeoClient`]. For more information about the API endpoints look [here](https://webservices.openplanet.dev/).
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`]
     ///
     /// # Examples
     ///
+    /// Gets the clubtag of a player given the *accountID*.
     /// ```rust
     /// # use nadeo_api::auth::Service;
     /// # use nadeo_api::NadeoClient;
@@ -76,6 +87,10 @@ impl NadeoClient {
     /// // execute request
     /// let response = client.execute(request).await?;
     /// ```
+    ///
+    /// [`Error`]: crate::Error
+    /// [`NadeoRequest`]: NadeoRequest
+    /// [`NadeoClient`]: NadeoClient
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
         match request.service {
             Service::NadeoServices => self.normal_auth.refresh(&self.client).await?,

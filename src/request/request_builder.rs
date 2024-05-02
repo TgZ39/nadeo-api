@@ -1,10 +1,15 @@
 use crate::auth::Service;
 use crate::request::{HttpMethod, NadeoRequest};
 use crate::{Error, Result};
-use derive_more::Display;
 use reqwest::header::{HeaderMap, IntoHeaderName};
+use serde::{Deserialize, Serialize};
 
-/// Used for creating [NadeoRequest](NadeoRequest)s.
+/// Used for creating [`NadeoRequest`]s. <br>
+/// The `URL`, [`HttpMethod`] and [`Service`] must be provided to successfully *build* a request.
+///
+/// [`NadeoRequest`]: NadeoRequest
+/// [`HttpMethod`]: HttpMethod
+/// [`Service`]: Service
 pub struct NadeoRequestBuilder {
     service: Option<Service>,
     url: Option<String>,
@@ -38,15 +43,24 @@ impl Default for NadeoRequestBuilder {
     }
 }
 
-#[derive(thiserror::Error, Debug, Display)]
+/// Error when the Request is invalid. For example if a required field is missing.
+#[derive(thiserror::Error, Debug, Serialize, Deserialize)]
 pub enum RequestBuilderError {
+    #[error("no URL was provided")]
     MissingUrl,
+    #[error("no HTTP method was provided")]
     MissingHttpMethod,
+    #[error("no NadeoService was provided")]
     MissingService,
 }
 
 impl NadeoRequestBuilder {
-    pub fn add_header<K>(&mut self, key: K, val: String) -> &mut Self
+    /// Adds a header to the request. Adding a header should not be required in most cases.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there is an error parsing the value.
+    pub fn add_header<K>(mut self, key: K, val: &str) -> Self
     where
         K: IntoHeaderName,
     {
@@ -54,8 +68,12 @@ impl NadeoRequestBuilder {
         self
     }
 
-    /// Converts the `NadeoRequestBuilder` into a [NadeoRequest](NadeoRequest).
-    /// The `URL`, `HttpMethod` and `Service` are required for a request.
+    /// Converts the `NadeoRequestBuilder` into a [NadeoRequest].
+    /// The `URL`, [`HttpMethod`] and [`Service`] are required for a request.
+    ///
+    /// [`NadeoRequest`]: NadeoRequest
+    /// [`HttpMethod`]: HttpMethod
+    /// [`Service`]: Service
     pub fn build(self) -> Result<NadeoRequest> {
         if self.url.is_none() {
             return Err(Error::from(RequestBuilderError::MissingUrl));

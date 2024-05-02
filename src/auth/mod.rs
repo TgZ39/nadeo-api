@@ -4,12 +4,14 @@ use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_REFRESH_URL};
 use crate::{Error, Result};
 use reqwest::header::{HeaderMap, USER_AGENT};
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
 
 pub mod token;
 
-#[derive(strum::Display, Clone, Debug)]
+/// Defines Service which is used to authenticate with the Nadeo API.
+#[derive(strum::Display, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Service {
     #[strum(to_string = "NadeoServices")]
     NadeoServices,
@@ -17,7 +19,7 @@ pub enum Service {
     NadeoLiveServices,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct AuthInfo {
     pub service: Service,
     pub access_token: AccessToken,
@@ -25,6 +27,9 @@ pub(crate) struct AuthInfo {
 }
 
 impl AuthInfo {
+    /// Forces a refresh request with the Nadeo API. [`refresh`] should be preferred over `force_refresh` in most cases.
+    ///
+    /// [`refresh`]: AuthInfo::refresh
     pub(crate) async fn force_refresh(&mut self, client: &Client) -> Result<()> {
         let mut headers = HeaderMap::new();
 
@@ -58,7 +63,16 @@ impl AuthInfo {
 
         Ok(())
     }
-
+    /// Checks wether the token is expired. If it is [`force_refresh`] is called.
+    /// If the refresh was successful `Ok(true)` is returned but if it fails `Err(Error)` is returned.
+    /// If the token is not expired `Ok(false)` is returned and a token refresh is not attempted.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the token is expired and the refresh request fails.
+    ///
+    /// [`Error`]: Error
+    /// [`force_refresh`]: AuthInfo::force_refresh
     pub(crate) async fn refresh(&mut self, client: &Client) -> Result<bool> {
         if !self.expires_in() < EXPIRATION_TIME_BUFFER {
             return Ok(false);
@@ -67,6 +81,7 @@ impl AuthInfo {
         self.force_refresh(client).await.map(|_| true)
     }
 
+    /// Returns the amount of **seconds** until the token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.access_token.expires_in()
     }
