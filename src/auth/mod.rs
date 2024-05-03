@@ -107,7 +107,7 @@ impl AuthInfo {
         Ok(())
     }
 
-    /// Checks wether the token is expired. If it is [`force_refresh`] is called.
+    /// Checks whether the token is expired. If it is [`force_refresh`] is called.
     /// If the refresh was successful `Ok(true)` is returned but if it fails `Err(Error)` is returned.
     /// If the token is not expired `Ok(false)` is returned and a token refresh is not attempted.
     ///

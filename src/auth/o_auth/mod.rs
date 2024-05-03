@@ -66,7 +66,7 @@ impl OAuthInfo {
         Ok(())
     }
 
-    /// Checks wether the access token is expired, if so [`OAuthInfo::force_refresh`] is called and `Ok(true)` or `Err(Error)` is returned.
+    /// Checks whether the access token is expired, if so [`OAuthInfo::force_refresh`] is called and `Ok(true)` or `Err(Error)` is returned.
     /// If the token is still valid `Ok(false)` is returned.
     pub(crate) async fn refresh(&mut self, client: &Client) -> Result<bool> {
         if self.expires_in() < EXPIRATION_TIME_BUFFER {
