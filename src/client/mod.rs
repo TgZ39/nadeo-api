@@ -69,7 +69,7 @@ impl NadeoClient {
     /// // build request
     /// let request = NadeoRequest::builder()
     ///     .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578")
-    ///     .service(AuthType::NadeoServices)
+    ///     .auth_type(AuthType::NadeoServices)
     ///     .http_method(HttpMethod::Get)
     ///     .build()?;
     ///
