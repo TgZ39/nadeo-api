@@ -102,6 +102,7 @@ impl OAuthInfo {
 
         let res = api_request
             .header("Authorization", token.parse::<HeaderValue>().unwrap())
+            .headers(request.headers)
             .send()
             .await?
             .error_for_status()?;

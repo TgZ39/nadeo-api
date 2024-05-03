@@ -31,6 +31,7 @@ pub mod request_builder;
 ///
 /// [`NadeoClient`]: crate::client::NadeoClient
 /// [`NadeoRequestBuilder`]: NadeoRequestBuilder
+
 #[derive(Debug, Clone)]
 pub struct NadeoRequest {
     pub(crate) auth_type: AuthType,
