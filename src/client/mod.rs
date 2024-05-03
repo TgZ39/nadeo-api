@@ -1,6 +1,6 @@
 use crate::auth::o_auth::OAuthInfo;
 
-use crate::auth::{AuthInfo, Service};
+use crate::auth::{AuthInfo, AuthType};
 use crate::request::NadeoRequest;
 use crate::{Error, Result};
 
@@ -52,7 +52,7 @@ impl NadeoClient {
     ///
     /// Gets the clubtag of a player given the *accountID*.
     /// ```rust
-    /// # use nadeo_api::auth::Service;
+    /// # use nadeo_api::auth::AuthType;
     /// # use nadeo_api::NadeoClient;
     /// # use nadeo_api::request::{HttpMethod, NadeoRequest};
     ///
@@ -62,7 +62,7 @@ impl NadeoClient {
     /// // build request
     /// let request = NadeoRequest::builder()
     ///     .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578".to_string())
-    ///     .service(Service::NadeoServices)
+    ///     .service(AuthType::NadeoServices)
     ///     .http_method(HttpMethod::Get)
     ///     .build()?;
     ///
@@ -75,21 +75,21 @@ impl NadeoClient {
     /// [`NadeoClient`]: NadeoClient
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
         match request.service {
-            Service::NadeoServices => {
+            AuthType::NadeoServices => {
                 if let Some(auth) = &mut self.normal_auth {
                     auth.execute(request, &self.client).await
                 } else {
                     Err(Error::from(ClientError::MissingNadeoAuth))
                 }
             }
-            Service::NadeoLiveServices => {
+            AuthType::NadeoLiveServices => {
                 if let Some(auth) = &mut self.live_auth {
                     auth.execute(request, &self.client).await
                 } else {
                     Err(Error::from(ClientError::MissingNadeoAuth))
                 }
             }
-            Service::OAuth => {
+            AuthType::OAuth => {
                 if let Some(auth) = &mut self.o_auth {
                     auth.execute(request, &self.client).await
                 } else {

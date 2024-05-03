@@ -1,4 +1,4 @@
-use crate::auth::Service;
+use crate::auth::AuthType;
 use crate::request::{HttpMethod, NadeoRequest};
 use crate::{Error, Result};
 use reqwest::header::{HeaderMap, IntoHeaderName};
@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 ///
 /// [`NadeoRequest`]: NadeoRequest
 /// [`HttpMethod`]: HttpMethod
-/// [`Service`]: Service
+/// [`Service`]: AuthType
 pub struct NadeoRequestBuilder {
-    service: Option<Service>,
+    service: Option<AuthType>,
     url: Option<String>,
     method: Option<HttpMethod>,
     headers: HeaderMap,
@@ -30,7 +30,7 @@ macro_rules! builder_fn {
 
 builder_fn!(NadeoRequestBuilder, url, url, String);
 builder_fn!(NadeoRequestBuilder, method, http_method, HttpMethod);
-builder_fn!(NadeoRequestBuilder, service, service, Service);
+builder_fn!(NadeoRequestBuilder, service, service, AuthType);
 
 impl Default for NadeoRequestBuilder {
     fn default() -> Self {
@@ -73,7 +73,7 @@ impl NadeoRequestBuilder {
     ///
     /// [`NadeoRequest`]: NadeoRequest
     /// [`HttpMethod`]: HttpMethod
-    /// [`Service`]: Service
+    /// [`Service`]: AuthType
     pub fn build(self) -> Result<NadeoRequest> {
         if self.url.is_none() {
             return Err(Error::from(RequestBuilderError::MissingUrl));

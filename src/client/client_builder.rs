@@ -1,5 +1,5 @@
 use crate::auth::o_auth::OAuthInfo;
-use crate::auth::{AuthInfo, Service};
+use crate::auth::{AuthInfo, AuthType};
 use crate::Result;
 use crate::{auth, Error, NadeoClient};
 use derive_more::{Display, Error};
@@ -18,14 +18,14 @@ pub struct NadeoClientBuilder {
 }
 
 impl NadeoClientBuilder {
-    /// Adds credentials for using [`Service::NadeoServices`] and [`Service::NadeoLiveServices`].
+    /// Adds credentials for using [`AuthType::NadeoServices`] and [`AuthType::NadeoLiveServices`].
     pub fn with_normal_auth(mut self, email: &str, password: &str) -> Self {
         self.normal_auth = Some((email.to_string(), password.to_string()));
 
         self
     }
 
-    /// Adds credentials for using [`Service::OAuth`].
+    /// Adds credentials for using [`AuthType::OAuth`].
     pub fn with_oauth_auth(mut self, identifier: &str, secret: &str) -> Self {
         self.o_auth = Some((identifier.to_string(), secret.to_string()));
 
@@ -46,8 +46,8 @@ impl NadeoClientBuilder {
         // request normal and live auth tokens
         if let Some(auth) = self.normal_auth {
             let ticket = auth::get_ubi_auth_ticket(&auth.0, &auth.1, &client).await?;
-            let normal_auth_fut = AuthInfo::new(Service::NadeoServices, &ticket, &client);
-            let live_auth_fut = AuthInfo::new(Service::NadeoLiveServices, &ticket, &client);
+            let normal_auth_fut = AuthInfo::new(AuthType::NadeoServices, &ticket, &client);
+            let live_auth_fut = AuthInfo::new(AuthType::NadeoLiveServices, &ticket, &client);
 
             // execute 2 futures concurrently
             let (n_auth, l_auth) = join(normal_auth_fut, live_auth_fut).await;

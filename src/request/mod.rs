@@ -1,4 +1,4 @@
-use crate::auth::Service;
+use crate::auth::AuthType;
 use crate::request::request_builder::NadeoRequestBuilder;
 
 pub use reqwest::header::HeaderMap;
@@ -15,14 +15,14 @@ pub mod request_builder;
 ///
 /// Gets the clubtag of a player given the *accountID*.
 /// ```rust
-/// # use nadeo_api::auth::Service;
+/// # use nadeo_api::auth::AuthType;
 /// # use nadeo_api::request::{HttpMethod, NadeoRequest};
 ///
 /// let mut client = //snap;
 ///
 /// let request = NadeoRequest::builder()
 ///          .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578".to_string())
-///          .service(Service::NadeoServices)
+///          .service(AuthType::NadeoServices)
 ///          .http_method(HttpMethod::Get)
 ///          .build()?;
 ///
@@ -33,7 +33,7 @@ pub mod request_builder;
 /// [`NadeoRequestBuilder`]: NadeoRequestBuilder
 #[derive(Debug, Clone)]
 pub struct NadeoRequest {
-    pub(crate) service: Service,
+    pub(crate) service: AuthType,
     pub(crate) url: String,
     pub(crate) method: HttpMethod,
     pub(crate) headers: HeaderMap,

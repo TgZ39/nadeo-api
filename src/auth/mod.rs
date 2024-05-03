@@ -19,7 +19,7 @@ const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
 
 /// Defines Service which is used to authenticate with the Nadeo API.
 #[derive(strum::Display, Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq)]
-pub enum Service {
+pub enum AuthType {
     #[strum(to_string = "NadeoServices")]
     NadeoServices,
     #[strum(to_string = "NadeoLiveServices")]
@@ -29,13 +29,13 @@ pub enum Service {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct AuthInfo {
-    pub service: Service,
+    pub service: AuthType,
     pub access_token: AccessToken,
     pub refresh_token: RefreshToken,
 }
 
 impl AuthInfo {
-    pub(crate) async fn new(service: Service, ticket: &str, client: &Client) -> Result<Self> {
+    pub(crate) async fn new(service: AuthType, ticket: &str, client: &Client) -> Result<Self> {
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", "application/json".parse().unwrap());
 
