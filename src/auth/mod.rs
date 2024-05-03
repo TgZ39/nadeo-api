@@ -1,14 +1,15 @@
 use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
 use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_AUTH_URL, NADEO_REFRESH_URL, UBISOFT_APP_ID};
-use crate::{Error, Result};
+use crate::{Error, NadeoRequest, Result};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
-use reqwest::header::HeaderMap;
-use reqwest::Client;
+use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
+use crate::request::HttpMethod;
 
 pub mod o_auth;
 pub mod token;
@@ -17,7 +18,7 @@ const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/s
 const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
 
 /// Defines Service which is used to authenticate with the Nadeo API.
-#[derive(strum::Display, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(strum::Display, Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Service {
     #[strum(to_string = "NadeoServices")]
     NadeoServices,
@@ -127,6 +128,33 @@ impl AuthInfo {
     /// Returns the amount of **seconds** until the token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.access_token.expires_in()
+    }
+
+    /// Executes a [`NadeoRequest`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the service of the [`AuthInfo`] and the [`NadeoRequest`] are not the same.
+    pub(crate) async fn execute(&mut self, request: NadeoRequest, client: &Client) -> Result<Response> {
+        assert_eq!(self.service, request.service);
+
+        self.refresh(client).await?;
+        let token = format!("nadeo_v1 t={}", self.access_token.encode());
+
+        let api_request = match request.method {
+            HttpMethod::Get => client.get(request.url),
+            HttpMethod::Post => client.post(request.url),
+            HttpMethod::Put => client.put(request.url),
+            HttpMethod::Patch => client.patch(request.url),
+            HttpMethod::Delete => client.delete(request.url),
+            HttpMethod::Head => client.head(request.url),
+        };
+
+        let res = api_request.header("Authorization", token.parse::<HeaderValue>().unwrap())
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(res)
     }
 }
 

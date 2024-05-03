@@ -74,81 +74,36 @@ impl NadeoClient {
     /// [`NadeoRequest`]: NadeoRequest
     /// [`NadeoClient`]: NadeoClient
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
-        // refresh tokens if required
         match request.service {
             Service::NadeoServices => {
-                if let Some(auth) = &mut self.o_auth {
-                    auth.refresh(&self.client).await?;
+                if let Some(auth) = &mut self.normal_auth {
+                    auth.execute(request,& self.client).await
                 } else {
-                    return Err(Error::from(ClientError::MissingNormalAuth));
+                    Err(Error::from(ClientError::MissingNadeoAuth))
                 }
-            }
+            },
             Service::NadeoLiveServices => {
                 if let Some(auth) = &mut self.live_auth {
-                    auth.refresh(&self.client).await?;
+                    auth.execute(request,& self.client).await
                 } else {
-                    return Err(Error::from(ClientError::MissingNormalAuth));
+                    Err(Error::from(ClientError::MissingNadeoAuth))
                 }
-            }
+            },
             Service::OAuth => {
                 if let Some(auth) = &mut self.o_auth {
-                    auth.refresh(&self.client).await?;
+                    auth.execute(request,& self.client).await
                 } else {
-                    return Err(Error::from(ClientError::MissingOAuth));
+                    Err(Error::from(ClientError::MissingOAuth))
                 }
             }
-        };
-
-        // get token
-        let token = match request.service {
-            Service::NadeoServices => self
-                .normal_auth
-                .as_ref()
-                .map(|token| format!("nadeo_v1 t={}", token.access_token.encode())),
-            Service::NadeoLiveServices => self
-                .live_auth
-                .as_ref()
-                .map(|token| format!("nadeo_v1 t={}", token.access_token.encode())),
-            Service::OAuth => self
-                .o_auth
-                .as_ref()
-                .map(|token| format!("Bearer {}", token.access_token)),
-        };
-        // throw error if credentials are missing
-        if token.is_none() {
-            return match request.service {
-                Service::NadeoServices | Service::NadeoLiveServices => {
-                    Err(Error::from(ClientError::MissingNormalAuth))
-                }
-                Service::OAuth => Err(Error::from(ClientError::MissingOAuth)),
-            };
         }
-
-        let mut headers = request.headers;
-        headers.insert("Authorization", token.unwrap().parse().unwrap());
-
-        let api_request = match request.method {
-            HttpMethod::Get => self.client.get(request.url),
-            HttpMethod::Post => self.client.post(request.url),
-            HttpMethod::Put => self.client.put(request.url),
-            HttpMethod::Patch => self.client.patch(request.url),
-            HttpMethod::Delete => self.client.delete(request.url),
-            HttpMethod::Head => self.client.head(request.url),
-        };
-
-        let res = api_request
-            .headers(headers)
-            .send()
-            .await?
-            .error_for_status()?;
-        Ok(res)
     }
 }
 
 #[derive(Error, Debug)]
 pub enum ClientError {
     #[error("Client does not have credentials for NadeoServices or NadeoLiveServices")]
-    MissingNormalAuth,
+    MissingNadeoAuth,
     #[error("Client does not have OAuth credentials")]
     MissingOAuth,
 }

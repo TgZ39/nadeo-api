@@ -1,9 +1,11 @@
 use crate::client::EXPIRATION_TIME_BUFFER;
-use crate::Result;
+use crate::{NadeoRequest, Result};
 use chrono::Local;
-use reqwest::Client;
+use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use reqwest::header::HeaderValue;
+use crate::request::HttpMethod;
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
@@ -78,5 +80,26 @@ impl OAuthInfo {
     /// Returns the amount of seconds until the token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.exp - Local::now().timestamp()
+    }
+
+    /// Executes a [`NadeoRequest`].
+    pub(crate) async fn execute(&mut self, request: NadeoRequest, client: &Client) -> Result<Response> {
+        self.refresh(client).await?;
+        let token = format!("Bearer {}", self.access_token);
+
+        let api_request = match request.method {
+            HttpMethod::Get => client.get(request.url),
+            HttpMethod::Post => client.post(request.url),
+            HttpMethod::Put => client.put(request.url),
+            HttpMethod::Patch => client.patch(request.url),
+            HttpMethod::Delete => client.delete(request.url),
+            HttpMethod::Head => client.head(request.url),
+        };
+
+        let res = api_request.header("Authorization", token.parse::<HeaderValue>().unwrap())
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(res)
     }
 }
