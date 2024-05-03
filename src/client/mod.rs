@@ -74,7 +74,7 @@ impl NadeoClient {
     /// [`NadeoRequest`]: NadeoRequest
     /// [`NadeoClient`]: NadeoClient
     pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
-        match request.service {
+        match request.auth_type {
             AuthType::NadeoServices => {
                 if let Some(auth) = &mut self.normal_auth {
                     auth.execute(request, &self.client).await

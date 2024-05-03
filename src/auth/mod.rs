@@ -140,7 +140,7 @@ impl AuthInfo {
         request: NadeoRequest,
         client: &Client,
     ) -> Result<Response> {
-        assert_eq!(self.service, request.service);
+        assert_eq!(self.service, request.auth_type);
 
         self.refresh(client).await?;
         let token = format!("nadeo_v1 t={}", self.access_token.encode());

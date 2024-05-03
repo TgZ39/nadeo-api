@@ -11,31 +11,16 @@ use serde::{Deserialize, Serialize};
 /// [`HttpMethod`]: HttpMethod
 /// [`Service`]: AuthType
 pub struct NadeoRequestBuilder {
-    service: Option<AuthType>,
+    auth_type: Option<AuthType>,
     url: Option<String>,
     method: Option<HttpMethod>,
     headers: HeaderMap,
 }
 
-macro_rules! builder_fn {
-    ( $builder_struct:ty, $field:ident, $fn_name:ident, $val:ty ) => {
-        impl $builder_struct {
-            pub fn $fn_name(mut self, val: $val) -> Self {
-                self.$field = Some(val);
-                self
-            }
-        }
-    };
-}
-
-builder_fn!(NadeoRequestBuilder, url, url, String);
-builder_fn!(NadeoRequestBuilder, method, http_method, HttpMethod);
-builder_fn!(NadeoRequestBuilder, service, service, AuthType);
-
 impl Default for NadeoRequestBuilder {
     fn default() -> Self {
         NadeoRequestBuilder {
-            service: None,
+            auth_type: None,
             method: None,
             headers: HeaderMap::new(),
             url: None,
@@ -50,11 +35,29 @@ pub enum RequestBuilderError {
     MissingUrl,
     #[error("no HTTP method was provided")]
     MissingHttpMethod,
-    #[error("no NadeoService was provided")]
-    MissingService,
+    #[error("no AuthType was provided")]
+    MissingAuthType,
 }
 
 impl NadeoRequestBuilder {
+    pub fn url(mut self, url: &str) -> Self {
+        self.url = Some(url.to_string());
+
+        self
+    }
+
+    pub fn method(mut self, method: HttpMethod) -> Self {
+        self.method = Some(method);
+
+        self
+    }
+
+    pub fn auth_type(mut self, auth_type: AuthType) -> Self {
+        self.auth_type = Some(auth_type);
+
+        self
+    }
+
     /// Adds a header to the request. Adding a header should not be required in most cases.
     ///
     /// # Panics
@@ -81,12 +84,12 @@ impl NadeoRequestBuilder {
         if self.method.is_none() {
             return Err(Error::from(RequestBuilderError::MissingHttpMethod));
         }
-        if self.service.is_none() {
-            return Err(Error::from(RequestBuilderError::MissingService));
+        if self.auth_type.is_none() {
+            return Err(Error::from(RequestBuilderError::MissingAuthType));
         }
 
         Ok(NadeoRequest {
-            service: self.service.unwrap(),
+            auth_type: self.auth_type.unwrap(),
             method: self.method.unwrap(),
             url: self.url.unwrap(),
             headers: self.headers,

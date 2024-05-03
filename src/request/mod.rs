@@ -21,7 +21,7 @@ pub mod request_builder;
 /// let mut client = //snap;
 ///
 /// let request = NadeoRequest::builder()
-///          .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578".to_string())
+///          .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578")
 ///          .service(AuthType::NadeoServices)
 ///          .http_method(HttpMethod::Get)
 ///          .build()?;
@@ -33,7 +33,7 @@ pub mod request_builder;
 /// [`NadeoRequestBuilder`]: NadeoRequestBuilder
 #[derive(Debug, Clone)]
 pub struct NadeoRequest {
-    pub(crate) service: AuthType,
+    pub(crate) auth_type: AuthType,
     pub(crate) url: String,
     pub(crate) method: HttpMethod,
     pub(crate) headers: HeaderMap,
