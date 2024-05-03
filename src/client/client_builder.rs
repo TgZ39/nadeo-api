@@ -18,18 +18,21 @@ pub struct NadeoClientBuilder {
 }
 
 impl NadeoClientBuilder {
+    /// Adds credentials for using [`Service::NadeoServices`] and [`Service::NadeoLiveServices`].
     pub fn with_normal_auth(mut self, email: &str, password: &str) -> Self {
         self.normal_auth = Some((email.to_string(), password.to_string()));
 
         self
     }
 
+    /// Adds credentials for using [`Service::OAuth`].
     pub fn with_oauth_auth(mut self, identifier: &str, secret: &str) -> Self {
         self.o_auth = Some((identifier.to_string(), secret.to_string()));
 
         self
     }
 
+    /// Trys to build a [`NadeoClient`].
     pub async fn build(self) -> Result<NadeoClient> {
         if self.o_auth.is_none() && self.normal_auth.is_none() {
             return Err(Error::from(NadeoClientBuilderError::MissingCredentials));
