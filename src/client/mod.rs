@@ -25,7 +25,11 @@ pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 /// Creating a client.
 /// ```rust
 /// # use nadeo_api::NadeoClient;
-/// let mut client = NadeoClient::new("my_email", "my_password").await?;
+/// let mut client = NadeoClient::builder()
+///     .with_normal_auth("email", "password") // optional (but at least 1 of the 2 is required)
+///     .with_oauth_auth("identifier", "secret") // optional
+///     .build()
+///     .await?;
 /// ```
 ///
 /// [`NadeoRequest`]: NadeoRequest
@@ -57,11 +61,14 @@ impl NadeoClient {
     /// # use nadeo_api::request::{HttpMethod, NadeoRequest};
     ///
     /// // create client
-    /// let mut client = NadeoClient::new("my_email", "my_password").await?;
+    /// let mut client = NadeoClient::builder()
+    ///     .with_normal_auth("email", "password")
+    ///     .build()
+    ///     .await?;
     ///
     /// // build request
     /// let request = NadeoRequest::builder()
-    ///     .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578".to_string())
+    ///     .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578")
     ///     .service(AuthType::NadeoServices)
     ///     .http_method(HttpMethod::Get)
     ///     .build()?;
