@@ -1,7 +1,7 @@
 use crate::auth::o_auth::OAuthInfo;
 
 use crate::auth::{AuthInfo, Service};
-use crate::request::{HttpMethod, NadeoRequest};
+use crate::request::NadeoRequest;
 use crate::{Error, Result};
 
 use reqwest::{Client, Response};
@@ -77,21 +77,21 @@ impl NadeoClient {
         match request.service {
             Service::NadeoServices => {
                 if let Some(auth) = &mut self.normal_auth {
-                    auth.execute(request,& self.client).await
+                    auth.execute(request, &self.client).await
                 } else {
                     Err(Error::from(ClientError::MissingNadeoAuth))
                 }
-            },
+            }
             Service::NadeoLiveServices => {
                 if let Some(auth) = &mut self.live_auth {
-                    auth.execute(request,& self.client).await
+                    auth.execute(request, &self.client).await
                 } else {
                     Err(Error::from(ClientError::MissingNadeoAuth))
                 }
-            },
+            }
             Service::OAuth => {
                 if let Some(auth) = &mut self.o_auth {
-                    auth.execute(request,& self.client).await
+                    auth.execute(request, &self.client).await
                 } else {
                     Err(Error::from(ClientError::MissingOAuth))
                 }

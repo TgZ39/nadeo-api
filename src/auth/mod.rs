@@ -1,6 +1,7 @@
 use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
 use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_AUTH_URL, NADEO_REFRESH_URL, UBISOFT_APP_ID};
+use crate::request::HttpMethod;
 use crate::{Error, NadeoRequest, Result};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
@@ -9,7 +10,6 @@ use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
-use crate::request::HttpMethod;
 
 pub mod o_auth;
 pub mod token;
@@ -135,7 +135,11 @@ impl AuthInfo {
     /// # Panics
     ///
     /// Panics if the service of the [`AuthInfo`] and the [`NadeoRequest`] are not the same.
-    pub(crate) async fn execute(&mut self, request: NadeoRequest, client: &Client) -> Result<Response> {
+    pub(crate) async fn execute(
+        &mut self,
+        request: NadeoRequest,
+        client: &Client,
+    ) -> Result<Response> {
         assert_eq!(self.service, request.service);
 
         self.refresh(client).await?;
@@ -150,7 +154,8 @@ impl AuthInfo {
             HttpMethod::Head => client.head(request.url),
         };
 
-        let res = api_request.header("Authorization", token.parse::<HeaderValue>().unwrap())
+        let res = api_request
+            .header("Authorization", token.parse::<HeaderValue>().unwrap())
             .send()
             .await?
             .error_for_status()?;

@@ -1,11 +1,11 @@
 use crate::client::EXPIRATION_TIME_BUFFER;
+use crate::request::HttpMethod;
 use crate::{NadeoRequest, Result};
 use chrono::Local;
+use reqwest::header::HeaderValue;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use reqwest::header::HeaderValue;
-use crate::request::HttpMethod;
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
@@ -83,7 +83,11 @@ impl OAuthInfo {
     }
 
     /// Executes a [`NadeoRequest`].
-    pub(crate) async fn execute(&mut self, request: NadeoRequest, client: &Client) -> Result<Response> {
+    pub(crate) async fn execute(
+        &mut self,
+        request: NadeoRequest,
+        client: &Client,
+    ) -> Result<Response> {
         self.refresh(client).await?;
         let token = format!("Bearer {}", self.access_token);
 
@@ -96,7 +100,8 @@ impl OAuthInfo {
             HttpMethod::Head => client.head(request.url),
         };
 
-        let res = api_request.header("Authorization", token.parse::<HeaderValue>().unwrap())
+        let res = api_request
+            .header("Authorization", token.parse::<HeaderValue>().unwrap())
             .send()
             .await?
             .error_for_status()?;
