@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
-/// Contains information used for OAuth authentication
+/// Contains information used for OAuth authentication. For creating an OAuth app look [here](https://api.trackmania.com/login).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct OAuthInfo {
     #[serde(skip)]
@@ -21,6 +21,18 @@ pub(crate) struct OAuthInfo {
 }
 
 impl OAuthInfo {
+    /// Requests access token using OAuth credentials. This function is used internally and OAuth should only be used through the [`NadeoClient`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use nadeo_api::auth::o_auth::OAuthInfo;
+    ///
+    /// let client = reqwest::Client::new();
+    /// let info = OAuthInfo::new("your_identifier", "your_secret", &client).await?;
+    /// ```
+    ///
+    /// [`NadeoClient`]: crate::NadeoClient
     pub(crate) async fn new(identifier: &str, secret: &str, client: &Client) -> Result<Self> {
         let mut form = HashMap::new();
         form.insert("grant_type", "client_credentials");
@@ -35,13 +47,14 @@ impl OAuthInfo {
             .error_for_status()?;
 
         let mut json = res.json::<Self>().await?;
-        json.exp = Local::now().timestamp();
+        json.exp = Local::now().timestamp() + 3600;
         json.identifier = identifier.to_string();
         json.secret = secret.to_string();
 
         Ok(json)
     }
 
+    /// Send a request to the nadeo OAuth API to get a new access token.
     pub(crate) async fn force_refresh(&mut self, client: &Client) -> Result<()> {
         let new = Self::new(&self.identifier, &self.secret, client).await?;
         self.token_type = new.token_type;
@@ -51,6 +64,8 @@ impl OAuthInfo {
         Ok(())
     }
 
+    /// Checks wether the access token is expired, if so [`OAuthInfo::force_refresh`] is called and `Ok(true)` or `Err(Error)` is returned.
+    /// If the token is still valid `Ok(false)` is returned.
     pub(crate) async fn refresh(&mut self, client: &Client) -> Result<bool> {
         if self.expires_in() < EXPIRATION_TIME_BUFFER {
             self.force_refresh(client).await?;
@@ -60,6 +75,7 @@ impl OAuthInfo {
         Ok(false)
     }
 
+    /// Returns the amount of seconds until the token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.exp - Local::now().timestamp()
     }
