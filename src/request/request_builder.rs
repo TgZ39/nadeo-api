@@ -5,11 +5,11 @@ use reqwest::header::{HeaderMap, IntoHeaderName};
 use serde::{Deserialize, Serialize};
 
 /// Used for creating [`NadeoRequest`]s. <br>
-/// The `URL`, [`HttpMethod`] and [`Service`] must be provided to successfully *build* a request.
+/// The `URL`, [`HttpMethod`] and [`AuthType`] must be provided to successfully *build* a request.
 ///
 /// [`NadeoRequest`]: NadeoRequest
 /// [`HttpMethod`]: HttpMethod
-/// [`Service`]: AuthType
+/// [`AuthType`]: AuthType
 pub struct NadeoRequestBuilder {
     auth_type: Option<AuthType>,
     url: Option<String>,
@@ -72,11 +72,11 @@ impl NadeoRequestBuilder {
     }
 
     /// Converts the `NadeoRequestBuilder` into a [`NadeoRequest`].
-    /// The `URL`, [`HttpMethod`] and [`Service`] are required for a request.
+    /// The `URL`, [`HttpMethod`] and [`AuthType`] are required for a request.
     ///
     /// [`NadeoRequest`]: NadeoRequest
     /// [`HttpMethod`]: HttpMethod
-    /// [`Service`]: AuthType
+    /// [`AuthType`]: AuthType
     pub fn build(self) -> Result<NadeoRequest> {
         if self.url.is_none() {
             return Err(Error::from(RequestBuilderError::MissingUrl));

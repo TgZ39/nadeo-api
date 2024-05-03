@@ -18,7 +18,7 @@ pub(crate) const NADEO_REFRESH_URL: &str =
 pub(crate) const UBISOFT_APP_ID: &str = "86263886-327a-4328-ac69-527f0d20a237";
 pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 
-/// This client can execute [`NadeoRequest`]s and handles authentication. OAuth is not supported.
+/// This client can execute [`NadeoRequest`]s and handles authentication.
 ///
 /// # Examples
 ///

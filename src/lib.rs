@@ -1,5 +1,5 @@
 //! This crate provides an interface for working with the [Nadeo API](https://webservices.openplanet.dev/).
-//! It handles (re)authentication automatically. OAuth is not supported *yet*.
+//! It handles (re)authentication automatically.
 
 pub mod auth;
 pub mod client;
