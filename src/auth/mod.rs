@@ -15,7 +15,7 @@ pub mod o_auth;
 pub mod token;
 
 const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
-const USER_AGENT: &str = "Testing the API / badbaboimbus+ubisoft@gmail.com";
+const USER_AGENT: &str = "nadeo-api library";
 
 /// Defines Service which is used to authenticate with the Nadeo API.
 #[derive(strum::Display, Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq)]
