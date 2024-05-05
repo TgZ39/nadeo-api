@@ -55,6 +55,7 @@
 //! [`AuthType::NadeoServices`]: auth::AuthType::NadeoServices
 //! [`AuthType::NadeoLiveServices`]: auth::AuthType::NadeoLiveServices
 //! [`AuthType::OAuth`]: auth::AuthType::OAuth
+//! [`AuthType`]: auth::AuthType
 //! [`NadeoClientBuilder::with_normal_auth()`]: client::client_builder::NadeoClientBuilder::with_normal_auth
 //! [`NadeoClientBuilder::with_oauth_auth()`]: client::client_builder::NadeoClientBuilder::with_oauth_auth
 
