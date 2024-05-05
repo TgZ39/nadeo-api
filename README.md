@@ -18,5 +18,5 @@ cargo install nadeo-api
 
 or add this line to your `Cargo.toml` with the desired version:
 ```toml
-nadeo-api = "0.2.1"
+nadeo-api = "0.2.2"
 ```
