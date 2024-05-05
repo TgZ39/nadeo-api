@@ -28,7 +28,7 @@ pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 /// # use nadeo_api::NadeoClient;
 /// let mut client = NadeoClient::builder()
 ///     .with_normal_auth("email", "password") // optional (but at least 1 of the 2 is required)
-///     .with_oauth_auth("identifier", "secret") // optional
+///     .with_oauth("identifier", "secret") // optional
 ///     .user_agent("Testing the API / mustermann.max@gmail.com") // required
 ///     .build()
 ///     .await?;

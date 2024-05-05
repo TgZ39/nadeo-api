@@ -10,7 +10,7 @@
 //! # use nadeo_api::NadeoClient;
 //! let mut client = NadeoClient::builder()
 //!     .with_normal_auth("ubisoft_account_email", "ubisoft_account_password")
-//!     .with_oauth_auth("my_identifier", "my_secret")
+//!     .with_oauth("my_identifier", "my_secret")
 //!     .user_agent("Testing the API / my.email@gmail.com")
 //!     .build()
 //!     .await?;
@@ -20,8 +20,8 @@
 //! To successfully create a [`NadeoRequest`] you will need to supply:
 //! - an [`AuthType`]:
 //!     - The depends on the API endpoint you want to make a request to.
-//!       If the endpoint requires [`AuthType::NadeoServices`] or [`AuthType::NadeoLiveServices`] you need to build the [`NadeoClient`] with [`NadeoClientBuilder::with_normal_auth()`].
-//!       If the endpoint requires [`AuthType::OAuth`] you need to build the [`NadeoClient`] with [`NadeoClientBuilder::with_oauth_auth()`].
+//!       If the endpoint requires `AuthType::NadeoServices` or `AuthType::NadeoLiveServices` you need to build the [`NadeoClient`] with `NadeoClientBuilder::with_normal_auth()`.
+//!       If the endpoint requires `AuthType::OAuth` you need to build the [`NadeoClient`] with `NadeoClientBuilder::with_oauth_auth()`.
 //! - a `URL`
 //! - an [`HttpMethod`]
 //!
@@ -33,7 +33,7 @@
 //! # use nadeo_api::request::HttpMethod;
 //! let mut client = NadeoClient::builder()
 //!     .with_normal_auth("ubisoft_account_email", "ubisoft_account_password")
-//!     .with_oauth_auth("my_identifier", "my_secret")
+//!     .with_oauth("my_identifier", "my_secret")
 //!     .user_agent("Testing the API / my.email@gmail.com")
 //!     .build()
 //!     .await?;
@@ -57,7 +57,7 @@
 //! [`AuthType::OAuth`]: auth::AuthType::OAuth
 //! [`AuthType`]: auth::AuthType
 //! [`NadeoClientBuilder::with_normal_auth()`]: client::client_builder::NadeoClientBuilder::with_normal_auth
-//! [`NadeoClientBuilder::with_oauth_auth()`]: client::client_builder::NadeoClientBuilder::with_oauth_auth
+//! [`NadeoClientBuilder::with_oauth_auth()`]: client::client_builder::NadeoClientBuilder::with_oauth
 
 pub mod auth;
 pub mod client;

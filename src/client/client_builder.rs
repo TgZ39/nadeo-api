@@ -28,7 +28,7 @@ impl NadeoClientBuilder {
     }
 
     /// Adds credentials for using [`AuthType::OAuth`].
-    pub fn with_oauth_auth(mut self, identifier: &str, secret: &str) -> Self {
+    pub fn with_oauth(mut self, identifier: &str, secret: &str) -> Self {
         self.o_auth = Some((identifier.to_string(), secret.to_string()));
 
         self
