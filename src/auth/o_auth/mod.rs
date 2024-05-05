@@ -6,6 +6,7 @@ use reqwest::header::HeaderValue;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::request::metadata::MetaData;
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
@@ -86,6 +87,7 @@ impl OAuthInfo {
     pub(crate) async fn execute(
         &mut self,
         request: NadeoRequest,
+        meta_data: &MetaData,
         client: &Client,
     ) -> Result<Response> {
         self.refresh(client).await?;
@@ -102,6 +104,7 @@ impl OAuthInfo {
 
         let res = api_request
             .header("Authorization", token.parse::<HeaderValue>().unwrap())
+            .header("User-Agent", meta_data.user_agent.parse::<HeaderValue>().unwrap())
             .headers(request.headers)
             .send()
             .await?

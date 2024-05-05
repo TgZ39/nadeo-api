@@ -10,14 +10,14 @@ use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
+use crate::request::metadata::MetaData;
 
 pub mod o_auth;
 pub mod token;
 
 const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";
-const USER_AGENT: &str = "nadeo-api library";
 
-/// Defines Service which is used to authenticate with the Nadeo API.
+/// Defines authentication credentials used for the Nadeo API.
 #[derive(strum::Display, Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq)]
 pub enum AuthType {
     #[strum(to_string = "NadeoServices")]
@@ -35,13 +35,13 @@ pub(crate) struct AuthInfo {
 }
 
 impl AuthInfo {
-    pub(crate) async fn new(service: AuthType, ticket: &str, client: &Client) -> Result<Self> {
+    pub(crate) async fn new(service: AuthType, ticket: &str, meta_data: &MetaData, client: &Client) -> Result<Self> {
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", "application/json".parse().unwrap());
 
         let auth_token = format!("ubi_v1 t={}", ticket);
         headers.insert("Authorization", auth_token.parse().unwrap());
-        headers.insert("User-Agent", USER_AGENT.parse().unwrap());
+        headers.insert("User-Agent", meta_data.user_agent.parse().unwrap());
 
         let body = json!(
             {
@@ -73,14 +73,14 @@ impl AuthInfo {
     /// Forces a refresh request with the Nadeo API. [`refresh`] should be preferred over `force_refresh` in most cases.
     ///
     /// [`refresh`]: AuthInfo::refresh
-    pub(crate) async fn force_refresh(&mut self, client: &Client) -> Result<()> {
+    pub(crate) async fn force_refresh(&mut self, meta_data: &MetaData, client: &Client) -> Result<()> {
         let mut headers = HeaderMap::new();
 
         // format refresh token
         let auth_token = format!("nadeo_v1 t={}", self.refresh_token.encode());
         headers.insert("Authorization", auth_token.parse().unwrap());
         headers.insert("Content-Type", "application/json".parse().unwrap());
-        headers.insert("User-Agent", USER_AGENT.to_string().parse().unwrap());
+        headers.insert("User-Agent", meta_data.user_agent.parse().unwrap());
 
         let body = json!(
             {
@@ -117,12 +117,12 @@ impl AuthInfo {
     ///
     /// [`Error`]: Error
     /// [`force_refresh`]: AuthInfo::force_refresh
-    pub(crate) async fn refresh(&mut self, client: &Client) -> Result<bool> {
+    pub(crate) async fn refresh(&mut self, meta_data: &MetaData, client: &Client) -> Result<bool> {
         if !self.expires_in() < EXPIRATION_TIME_BUFFER {
             return Ok(false);
         }
 
-        self.force_refresh(client).await.map(|_| true)
+        self.force_refresh(meta_data, client).await.map(|_| true)
     }
 
     /// Returns the amount of **seconds** until the token expires.
@@ -138,11 +138,12 @@ impl AuthInfo {
     pub(crate) async fn execute(
         &mut self,
         request: NadeoRequest,
+        meta_data: &MetaData,
         client: &Client,
     ) -> Result<Response> {
         assert_eq!(self.service, request.auth_type);
 
-        self.refresh(client).await?;
+        self.refresh(meta_data, client).await?;
         let token = format!("nadeo_v1 t={}", self.access_token.encode());
 
         let api_request = match request.method {
@@ -156,6 +157,7 @@ impl AuthInfo {
 
         let res = api_request
             .header("Authorization", token.parse::<HeaderValue>().unwrap())
+            .header("User-Agent", meta_data.user_agent.parse::<HeaderValue>().unwrap())
             .headers(request.headers)
             .send()
             .await?
@@ -167,13 +169,14 @@ impl AuthInfo {
 pub(crate) async fn get_ubi_auth_ticket(
     email: &str,
     password: &str,
+    meta_data: &MetaData,
     client: &Client,
 ) -> Result<String> {
     let mut headers = HeaderMap::new();
 
     headers.insert("Content-Type", "application/json".parse().unwrap());
     headers.insert("Ubi-AppId", UBISOFT_APP_ID.parse().unwrap());
-    headers.insert("User-Agent", USER_AGENT.parse().unwrap());
+    headers.insert("User-Agent", meta_data.user_agent.parse().unwrap());
 
     let ubi_auth_token = {
         let auth = format!("{}:{}", email, password);

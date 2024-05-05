@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 
 pub mod request_builder;
 
+pub(crate) mod metadata;
+
 /// Contains information about an API request. NadeoRequests can be executed on an instance of a [`NadeoClient`].
 /// If you want to create a request use the [`NadeoRequestBuilder`] with `NadeoRequest::builder()`.
 ///

@@ -8,6 +8,7 @@ use reqwest::{Client, Response};
 
 use crate::client::client_builder::NadeoClientBuilder;
 use thiserror::Error;
+use crate::request::metadata::MetaData;
 
 pub mod client_builder;
 
@@ -39,6 +40,7 @@ pub struct NadeoClient {
     pub(crate) normal_auth: Option<AuthInfo>,
     pub(crate) live_auth: Option<AuthInfo>,
     pub(crate) o_auth: Option<OAuthInfo>,
+    pub(crate) meta_data: MetaData
 }
 
 impl NadeoClient {
@@ -84,21 +86,21 @@ impl NadeoClient {
         match request.auth_type {
             AuthType::NadeoServices => {
                 if let Some(auth) = &mut self.normal_auth {
-                    auth.execute(request, &self.client).await
+                    auth.execute(request, &self.meta_data, &self.client).await
                 } else {
                     Err(Error::from(ClientError::MissingNadeoAuth))
                 }
             }
             AuthType::NadeoLiveServices => {
                 if let Some(auth) = &mut self.live_auth {
-                    auth.execute(request, &self.client).await
+                    auth.execute(request, &self.meta_data, &self.client).await
                 } else {
                     Err(Error::from(ClientError::MissingNadeoAuth))
                 }
             }
             AuthType::OAuth => {
                 if let Some(auth) = &mut self.o_auth {
-                    auth.execute(request, &self.client).await
+                    auth.execute(request, &self.meta_data, &self.client).await
                 } else {
                     Err(Error::from(ClientError::MissingOAuth))
                 }
