@@ -1,4 +1,5 @@
 use crate::client::EXPIRATION_TIME_BUFFER;
+use crate::request::metadata::MetaData;
 use crate::request::HttpMethod;
 use crate::{NadeoRequest, Result};
 use chrono::Local;
@@ -6,7 +7,6 @@ use reqwest::header::HeaderValue;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::request::metadata::MetaData;
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
@@ -104,7 +104,10 @@ impl OAuthInfo {
 
         let res = api_request
             .header("Authorization", token.parse::<HeaderValue>().unwrap())
-            .header("User-Agent", meta_data.user_agent.parse::<HeaderValue>().unwrap())
+            .header(
+                "User-Agent",
+                meta_data.user_agent.parse::<HeaderValue>().unwrap(),
+            )
             .headers(request.headers)
             .send()
             .await?

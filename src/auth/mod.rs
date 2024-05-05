@@ -1,6 +1,7 @@
 use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
 use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_AUTH_URL, NADEO_REFRESH_URL, UBISOFT_APP_ID};
+use crate::request::metadata::MetaData;
 use crate::request::HttpMethod;
 use crate::{Error, NadeoRequest, Result};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
@@ -10,7 +11,6 @@ use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
-use crate::request::metadata::MetaData;
 
 pub mod o_auth;
 pub mod token;
@@ -35,7 +35,12 @@ pub(crate) struct AuthInfo {
 }
 
 impl AuthInfo {
-    pub(crate) async fn new(service: AuthType, ticket: &str, meta_data: &MetaData, client: &Client) -> Result<Self> {
+    pub(crate) async fn new(
+        service: AuthType,
+        ticket: &str,
+        meta_data: &MetaData,
+        client: &Client,
+    ) -> Result<Self> {
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", "application/json".parse().unwrap());
 
@@ -73,7 +78,11 @@ impl AuthInfo {
     /// Forces a refresh request with the Nadeo API. [`refresh`] should be preferred over `force_refresh` in most cases.
     ///
     /// [`refresh`]: AuthInfo::refresh
-    pub(crate) async fn force_refresh(&mut self, meta_data: &MetaData, client: &Client) -> Result<()> {
+    pub(crate) async fn force_refresh(
+        &mut self,
+        meta_data: &MetaData,
+        client: &Client,
+    ) -> Result<()> {
         let mut headers = HeaderMap::new();
 
         // format refresh token
@@ -157,7 +166,10 @@ impl AuthInfo {
 
         let res = api_request
             .header("Authorization", token.parse::<HeaderValue>().unwrap())
-            .header("User-Agent", meta_data.user_agent.parse::<HeaderValue>().unwrap())
+            .header(
+                "User-Agent",
+                meta_data.user_agent.parse::<HeaderValue>().unwrap(),
+            )
             .headers(request.headers)
             .send()
             .await?

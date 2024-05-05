@@ -1,11 +1,11 @@
 use crate::auth::o_auth::OAuthInfo;
 use crate::auth::{AuthInfo, AuthType};
+use crate::request::metadata::MetaData;
 use crate::Result;
 use crate::{auth, Error, NadeoClient};
 use futures::future::join;
 use reqwest::Client;
 use thiserror::Error;
-use crate::request::metadata::MetaData;
 
 type EMail = String;
 type Password = String;
@@ -16,7 +16,7 @@ type Secret = String;
 pub struct NadeoClientBuilder {
     normal_auth: Option<(EMail, Password)>,
     o_auth: Option<(Identifier, Secret)>,
-    user_agent: Option<String>
+    user_agent: Option<String>,
 }
 
 impl NadeoClientBuilder {
@@ -66,8 +66,8 @@ impl NadeoClientBuilder {
             return Err(Error::from(NadeoClientBuilderError::MissingUserAgent));
         }
 
-        let meta_data = MetaData{
-            user_agent: self.user_agent.unwrap()
+        let meta_data = MetaData {
+            user_agent: self.user_agent.unwrap(),
         };
 
         let client = Client::new();
@@ -78,8 +78,10 @@ impl NadeoClientBuilder {
         // request normal and live auth tokens
         if let Some(auth) = self.normal_auth {
             let ticket = auth::get_ubi_auth_ticket(&auth.0, &auth.1, &meta_data, &client).await?;
-            let normal_auth_fut = AuthInfo::new(AuthType::NadeoServices, &ticket, &meta_data, &client);
-            let live_auth_fut = AuthInfo::new(AuthType::NadeoLiveServices, &ticket, &meta_data, &client);
+            let normal_auth_fut =
+                AuthInfo::new(AuthType::NadeoServices, &ticket, &meta_data, &client);
+            let live_auth_fut =
+                AuthInfo::new(AuthType::NadeoLiveServices, &ticket, &meta_data, &client);
 
             // execute 2 futures concurrently
             let (n_auth, l_auth) = join(normal_auth_fut, live_auth_fut).await;
@@ -102,7 +104,7 @@ impl NadeoClientBuilder {
             normal_auth,
             live_auth,
             o_auth,
-            meta_data
+            meta_data,
         })
     }
 }
@@ -112,5 +114,5 @@ pub enum NadeoClientBuilderError {
     #[error("No credentials were provided. At least 1 auth method is required")]
     MissingCredentials,
     #[error("No UserAgent was provided")]
-    MissingUserAgent
+    MissingUserAgent,
 }

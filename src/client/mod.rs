@@ -7,8 +7,8 @@ use crate::{Error, Result};
 use reqwest::{Client, Response};
 
 use crate::client::client_builder::NadeoClientBuilder;
-use thiserror::Error;
 use crate::request::metadata::MetaData;
+use thiserror::Error;
 
 pub mod client_builder;
 
@@ -29,6 +29,7 @@ pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 /// let mut client = NadeoClient::builder()
 ///     .with_normal_auth("email", "password") // optional (but at least 1 of the 2 is required)
 ///     .with_oauth_auth("identifier", "secret") // optional
+///     .user_agent("Testing the API / mustermann.max@gmail.com") // required
 ///     .build()
 ///     .await?;
 /// ```
@@ -40,7 +41,7 @@ pub struct NadeoClient {
     pub(crate) normal_auth: Option<AuthInfo>,
     pub(crate) live_auth: Option<AuthInfo>,
     pub(crate) o_auth: Option<OAuthInfo>,
-    pub(crate) meta_data: MetaData
+    pub(crate) meta_data: MetaData,
 }
 
 impl NadeoClient {
@@ -52,7 +53,7 @@ impl NadeoClient {
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`]
+    /// Returns an [`Error`] if the required credentials for authorizing the request were not supplied when building the client or when there is an Error while executing the request.
     ///
     /// # Examples
     ///
@@ -65,6 +66,7 @@ impl NadeoClient {
     /// // create client
     /// let mut client = NadeoClient::builder()
     ///     .with_normal_auth("email", "password")
+    ///     .user_agent("Testing the API / mustermann.max@gmail.com")
     ///     .build()
     ///     .await?;
     ///
