@@ -103,7 +103,8 @@ impl NadeoClientBuilder {
             }
         };
         // execute requests
-        let (normal_auth_res, live_auth_res, oauth_res) = join3(normal_auth_future, live_auth_future, oauth_future).await;
+        let (normal_auth_res, live_auth_res, oauth_res) =
+            join3(normal_auth_future, live_auth_future, oauth_future).await;
 
         let mut normal_auth = None;
         let mut live_auth = None;

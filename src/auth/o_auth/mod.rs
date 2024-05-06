@@ -1,3 +1,4 @@
+use crate::auth::AuthType;
 use crate::client::EXPIRATION_TIME_BUFFER;
 use crate::request::metadata::MetaData;
 use crate::request::HttpMethod;
@@ -7,7 +8,6 @@ use reqwest::header::HeaderValue;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::auth::AuthType;
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
