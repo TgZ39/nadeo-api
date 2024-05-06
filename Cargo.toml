@@ -2,7 +2,7 @@
 name = "nadeo-api"
 version = "0.2.2"
 edition = "2021"
-license = "GPL-2.0"
+license = "Apache-2.0"
 description = "An interface for working with the Nadeo API"
 repository = "https://www.github.com/TgZ39/nadeo-api"
 keywords = ["nadeo", "nadeo-api-client"]
