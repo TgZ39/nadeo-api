@@ -47,7 +47,7 @@ use nadeo_api::auth::AuthType;
 use nadeo_api::request::HttpMethod;
 
 let request = NadeoRequest::builder()
-    .url("ape_endpoint_url")
+    .url("api_endpoint_url")
     .auth_type(AuthType::NadeoServices)
     .method(HttpMethod::Get)
     .build()?;
@@ -56,8 +56,8 @@ let request = NadeoRequest::builder()
 Executing a request:
 
 ```rust
-let mut client = //snap;
-let mut request = //snap;
+let mut client = /* snap */;
+let request = /* snap */;
 
 let response = client.execute(request).await?;
 ```
