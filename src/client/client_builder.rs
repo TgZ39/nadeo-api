@@ -3,7 +3,7 @@ use crate::auth::{AuthInfo, AuthType};
 use crate::request::metadata::MetaData;
 use crate::Result;
 use crate::{auth, Error, NadeoClient};
-use futures::future::join;
+use futures::future::join3;
 use reqwest::Client;
 use thiserror::Error;
 
@@ -72,31 +72,52 @@ impl NadeoClientBuilder {
 
         let client = Client::new();
 
-        let mut normal_auth = None;
-        let mut live_auth = None;
-
-        // request normal and live auth tokens
-        if let Some(auth) = self.normal_auth {
-            let ticket = auth::get_ubi_auth_ticket(&auth.0, &auth.1, &meta_data, &client).await?;
-            let normal_auth_fut =
-                AuthInfo::new(AuthType::NadeoServices, &ticket, &meta_data, &client);
-            let live_auth_fut =
-                AuthInfo::new(AuthType::NadeoLiveServices, &ticket, &meta_data, &client);
-
-            // execute 2 futures concurrently
-            let (n_auth, l_auth) = join(normal_auth_fut, live_auth_fut).await;
-
-            normal_auth = Some(n_auth?);
-            live_auth = Some(l_auth?);
+        // Ubisoft auth ticket
+        let mut ticket = String::new();
+        if let Some(ref auth) = self.normal_auth {
+            ticket = auth::get_ubi_auth_ticket(&auth.0, &auth.1, &meta_data, &client).await?;
         }
 
+        // NadeoServices
+        let normal_auth_future = async {
+            if self.normal_auth.is_some() {
+                Some(AuthInfo::new(AuthType::NadeoServices, &ticket, &meta_data, &client).await)
+            } else {
+                None
+            }
+        };
+        // NadeoLiveServices
+        let live_auth_future = async {
+            if self.normal_auth.is_some() {
+                Some(AuthInfo::new(AuthType::NadeoLiveServices, &ticket, &meta_data, &client).await)
+            } else {
+                None
+            }
+        };
+        // OAuth
+        let oauth_future = async {
+            if let Some(auth) = self.o_auth {
+                Some(OAuthInfo::new(&auth.0, &auth.1, &client).await)
+            } else {
+                None
+            }
+        };
+        // execute requests
+        let (normal_auth_res, live_auth_res, oauth_res) = join3(normal_auth_future, live_auth_future, oauth_future).await;
+
+        let mut normal_auth = None;
+        let mut live_auth = None;
         let mut o_auth = None;
 
-        // request oauth token
-        if let Some(auth) = self.o_auth {
-            let auth = OAuthInfo::new(&auth.0, &auth.1, &client).await?;
-
-            o_auth = Some(auth)
+        // extract results
+        if let Some(auth) = normal_auth_res {
+            normal_auth = Some(auth?);
+        }
+        if let Some(auth) = live_auth_res {
+            live_auth = Some(auth?);
+        }
+        if let Some(auth) = oauth_res {
+            o_auth = Some(auth?);
         }
 
         Ok(NadeoClient {
