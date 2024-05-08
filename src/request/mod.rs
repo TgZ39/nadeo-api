@@ -1,5 +1,6 @@
 use crate::auth::AuthType;
 use crate::request::request_builder::NadeoRequestBuilder;
+use reqwest::header::HeaderMap;
 
 pub use reqwest::Response;
 use serde::{Deserialize, Serialize};
