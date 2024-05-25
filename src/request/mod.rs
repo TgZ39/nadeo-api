@@ -39,6 +39,7 @@ pub struct NadeoRequest {
     pub(crate) url: String,
     pub(crate) method: HttpMethod,
     pub(crate) headers: HeaderMap,
+    pub(crate) body: Option<String>,
 }
 
 impl NadeoRequest {

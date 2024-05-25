@@ -10,22 +10,13 @@ use serde::{Deserialize, Serialize};
 /// [`NadeoRequest`]: NadeoRequest
 /// [`HttpMethod`]: HttpMethod
 /// [`AuthType`]: AuthType
+#[derive(Default)]
 pub struct NadeoRequestBuilder {
     auth_type: Option<AuthType>,
     url: Option<String>,
     method: Option<HttpMethod>,
     headers: HeaderMap,
-}
-
-impl Default for NadeoRequestBuilder {
-    fn default() -> Self {
-        NadeoRequestBuilder {
-            auth_type: None,
-            method: None,
-            headers: HeaderMap::new(),
-            url: None,
-        }
-    }
+    body: Option<String>,
 }
 
 /// Error when the Request is invalid. For example if a required field is missing.
@@ -40,6 +31,12 @@ pub enum RequestBuilderError {
 }
 
 impl NadeoRequestBuilder {
+    pub fn body(mut self, json: &str) -> Self {
+        self.body = Some(json.to_string());
+
+        self
+    }
+
     pub fn url(mut self, url: &str) -> Self {
         self.url = Some(url.to_string());
 
@@ -93,6 +90,7 @@ impl NadeoRequestBuilder {
             method: self.method.unwrap(),
             url: self.url.unwrap(),
             headers: self.headers,
+            body: self.body,
         })
     }
 }

@@ -164,16 +164,19 @@ impl AuthInfo {
             HttpMethod::Head => client.head(request.url),
         };
 
-        let res = api_request
+        let mut res = api_request
             .header("Authorization", token.parse::<HeaderValue>().unwrap())
             .header(
                 "User-Agent",
                 meta_data.user_agent.parse::<HeaderValue>().unwrap(),
             )
-            .headers(request.headers)
-            .send()
-            .await?
-            .error_for_status()?;
+            .headers(request.headers);
+        if let Some(json) = request.body {
+            res = res.body(json);
+        }
+
+        let res = res.send().await?.error_for_status()?;
+
         Ok(res)
     }
 }
