@@ -8,8 +8,6 @@ About
 ---
 This library provides an interface (or whatever you want to call it) for working with the [Nadeo API](https://webservices.openplanet.dev/). It handles **authentication** automatically but API requests have to be build up manually by the user.
 
-⚠️ This project is in early development ⚠️
-
 Installation
 ---
 
@@ -20,7 +18,7 @@ cargo add nadeo-api
 
 or add this line to your `Cargo.toml` with the desired version:
 ```toml
-nadeo-api = "0.2.2"
+nadeo-api = "0.2.3"
 ```
 
 Getting started
@@ -50,6 +48,7 @@ let request = NadeoRequest::builder()
     .url("api_endpoint_url")
     .auth_type(AuthType::NadeoServices)
     .method(HttpMethod::Get)
+    .body("some text/json") // optional
     .build()?;
 ```
 
