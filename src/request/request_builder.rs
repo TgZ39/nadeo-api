@@ -31,6 +31,7 @@ pub enum RequestBuilderError {
 }
 
 impl NadeoRequestBuilder {
+    /// Adds a text body to the request. Usually JSON.
     pub fn body(mut self, json: &str) -> Self {
         self.body = Some(json.to_string());
 
