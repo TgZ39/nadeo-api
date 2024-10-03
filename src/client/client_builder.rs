@@ -68,7 +68,7 @@ impl NadeoClientBuilder {
 
     /// Trys to build a [`NadeoClient`].
     pub async fn build(self) -> Result<NadeoClient> {
-        if self.o_auth.is_none() && self.normal_auth.is_none() {
+        if self.o_auth.is_none() && self.normal_auth.is_none() && self.server_auth.is_none() {
             return Err(Error::from(NadeoClientBuilderError::MissingCredentials));
         }
         if self.user_agent.is_none() {
