@@ -74,7 +74,8 @@ pub(crate) struct RefreshPayload {
     aun: String,
     rtk: bool,
     pce: bool,
-    ubiservices_uid: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ubiservices_uid: Option<String>,
     refresh_aud: String,
     limit_type: String,
 }

@@ -14,6 +14,8 @@ pub mod client_builder;
 
 pub(crate) const NADEO_AUTH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/ubiservices";
+pub(crate) const NADEO_SERVER_AUTH_URL: &str =
+    "https://prod.trackmania.core.nadeo.online/v2/authentication/token/basic";
 pub(crate) const NADEO_REFRESH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/refresh";
 pub(crate) const UBISOFT_APP_ID: &str = "86263886-327a-4328-ac69-527f0d20a237";
