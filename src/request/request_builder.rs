@@ -4,8 +4,8 @@ use crate::{Error, Result};
 use reqwest::header::{HeaderMap, IntoHeaderName};
 use serde::{Deserialize, Serialize};
 
-/// Used for creating [`NadeoRequest`]s. <br>
-/// The `URL`, [`HttpMethod`] and [`AuthType`] must be provided to successfully *build* a request.
+/// Used for creating [`NadeoRequest`]s.
+/// `URL`, [`HttpMethod`] and [`AuthType`] must be provided.
 ///
 /// [`NadeoRequest`]: NadeoRequest
 /// [`HttpMethod`]: HttpMethod
@@ -70,7 +70,7 @@ impl NadeoRequestBuilder {
     }
 
     /// Converts the `NadeoRequestBuilder` into a [`NadeoRequest`].
-    /// The `URL`, [`HttpMethod`] and [`AuthType`] are required for a request.
+    /// `URL`, [`HttpMethod`] and [`AuthType`] are required.
     ///
     /// [`NadeoRequest`]: NadeoRequest
     /// [`HttpMethod`]: HttpMethod

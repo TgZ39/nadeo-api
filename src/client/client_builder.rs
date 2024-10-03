@@ -8,6 +8,7 @@ use reqwest::Client;
 use thiserror::Error;
 
 type EMail = String;
+type Username = String;
 type Password = String;
 type Identifier = String;
 type Secret = String;
@@ -15,6 +16,7 @@ type Secret = String;
 #[derive(Debug, Clone, Default)]
 pub struct NadeoClientBuilder {
     normal_auth: Option<(EMail, Password)>,
+    server_auth: Option<(Username, Password)>,
     o_auth: Option<(Identifier, Secret)>,
     user_agent: Option<String>,
 }
@@ -23,6 +25,14 @@ impl NadeoClientBuilder {
     /// Adds credentials for using [`AuthType::NadeoServices`] and [`AuthType::NadeoLiveServices`].
     pub fn with_normal_auth(mut self, email: &str, password: &str) -> Self {
         self.normal_auth = Some((email.to_string(), password.to_string()));
+
+        self
+    }
+
+    /// Adds credentials for using [`AuthType::NadeoServices`] and [`AuthType::NadeoLiveServices`] using a server account.
+    /// [`NadeoClientBuilder`] will prefer [`NadeoClientBuilder::with_normal_auth`] if `with_normal_auth` and `with_server_auth` are added.
+    pub fn with_server_auth(mut self, username: &str, password: &str) -> Self {
+        self.server_auth = Some((username.to_string(), password.to_string()));
 
         self
     }
@@ -59,7 +69,7 @@ impl NadeoClientBuilder {
 
     /// Trys to build a [`NadeoClient`].
     pub async fn build(self) -> Result<NadeoClient> {
-        if self.o_auth.is_none() && self.normal_auth.is_none() {
+        if self.o_auth.is_none() && self.normal_auth.is_none() && self.server_auth.is_none() {
             return Err(Error::from(NadeoClientBuilderError::MissingCredentials));
         }
         if self.user_agent.is_none() {
@@ -82,6 +92,17 @@ impl NadeoClientBuilder {
         let normal_auth_future = async {
             if self.normal_auth.is_some() {
                 Some(AuthInfo::new(AuthType::NadeoServices, &ticket, &meta_data, &client).await)
+            } else if let Some((ref username, ref password)) = self.server_auth {
+                Some(
+                    AuthInfo::new_server(
+                        AuthType::NadeoServices,
+                        &meta_data,
+                        username,
+                        password,
+                        &client,
+                    )
+                    .await,
+                )
             } else {
                 None
             }
@@ -90,6 +111,17 @@ impl NadeoClientBuilder {
         let live_auth_future = async {
             if self.normal_auth.is_some() {
                 Some(AuthInfo::new(AuthType::NadeoLiveServices, &ticket, &meta_data, &client).await)
+            } else if let Some((ref username, ref password)) = self.server_auth {
+                Some(
+                    AuthInfo::new_server(
+                        AuthType::NadeoLiveServices,
+                        &meta_data,
+                        username,
+                        password,
+                        &client,
+                    )
+                    .await,
+                )
             } else {
                 None
             }

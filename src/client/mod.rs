@@ -14,6 +14,8 @@ pub mod client_builder;
 
 pub(crate) const NADEO_AUTH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/ubiservices";
+pub(crate) const NADEO_SERVER_AUTH_URL: &str =
+    "https://prod.trackmania.core.nadeo.online/v2/authentication/token/basic";
 pub(crate) const NADEO_REFRESH_URL: &str =
     "https://prod.trackmania.core.nadeo.online/v2/authentication/token/refresh";
 pub(crate) const UBISOFT_APP_ID: &str = "86263886-327a-4328-ac69-527f0d20a237";
@@ -27,7 +29,8 @@ pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 /// ```rust
 /// # use nadeo_api::NadeoClient;
 /// let mut client = NadeoClient::builder()
-///     .with_normal_auth("email", "password") // optional (but at least 1 of the 2 is required)
+///     .with_normal_auth("email", "password") // optional (but at least 1 of the 3 is required)
+///     .with_server_auth("username", "password") // optional
 ///     .with_oauth("identifier", "secret") // optional
 ///     .user_agent("Testing the API / mustermann.max@gmail.com") // required
 ///     .build()
@@ -74,7 +77,7 @@ impl NadeoClient {
     /// let request = NadeoRequest::builder()
     ///     .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578")
     ///     .auth_type(AuthType::NadeoServices)
-    ///     .http_method(HttpMethod::Get)
+    ///     .method(HttpMethod::Get)
     ///     .build()?;
     ///
     /// // execute request

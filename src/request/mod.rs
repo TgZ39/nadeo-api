@@ -22,10 +22,10 @@ pub(crate) mod metadata;
 /// let mut client = //snap;
 ///
 /// let request = NadeoRequest::builder()
-///          .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578")
-///          .auth_type(AuthType::NadeoServices)
-///          .http_method(HttpMethod::Get)
-///          .build()?;
+///     .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578")
+///     .auth_type(AuthType::NadeoServices)
+///     .method(HttpMethod::Get)
+///     .build()?;
 ///
 /// let response = client.execute(request).await?;
 /// ```
@@ -43,7 +43,7 @@ pub struct NadeoRequest {
 }
 
 impl NadeoRequest {
-    /// Creates a new NadeoRequestBuilder. This is the only way of creating a [NadeoRequest].
+    /// Creates a new [`NadeoRequestBuilder`]. This is the only way of creating a [NadeoRequest].
     ///
     /// [`NadeoRequest`]: NadeoRequest
     pub fn builder() -> NadeoRequestBuilder {

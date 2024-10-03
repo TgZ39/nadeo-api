@@ -10,18 +10,19 @@
 //! # use nadeo_api::NadeoClient;
 //! let mut client = NadeoClient::builder()
 //!     .with_normal_auth("ubisoft_account_email", "ubisoft_account_password")
+//!     .with_server_auth("my_username", "my_password")
 //!     .with_oauth("my_identifier", "my_secret")
 //!     .user_agent("Testing the API / my.email@gmail.com")
 //!     .build()
 //!     .await?;
 //! ```
 //!
-//! To execute a [`NadeoRequest`] you need to create one with [`NadeoRequest::builder`].
-//! To successfully create a [`NadeoRequest`] you will need to supply:
+//! Use [`NadeoRequest::builder`] to create a `NadeoRequestBuilder`.
+//! To create a [`NadeoRequest`] you will need to supply:
 //! - an [`AuthType`]:
 //!     - The depends on the API endpoint you want to make a request to.
 //!       If the endpoint requires `AuthType::NadeoServices` or `AuthType::NadeoLiveServices` you need to build the [`NadeoClient`] with `NadeoClientBuilder::with_normal_auth()`.
-//!       If the endpoint requires `AuthType::OAuth` you need to build the [`NadeoClient`] with `NadeoClientBuilder::with_oauth_auth()`.
+//!       If the endpoint requires `AuthType::OAuth` you need to build the [`NadeoClient`] with `NadeoClientBuilder::with_oauth()`.
 //! - a `URL`
 //! - an [`HttpMethod`]
 //!

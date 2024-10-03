@@ -73,7 +73,8 @@ pub(crate) struct AccessPayload {
     aun: String,
     rtk: bool,
     pce: bool,
-    ubiservices_uid: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ubiservices_uid: Option<String>,
 }
 
 impl FromStr for AccessPayload {

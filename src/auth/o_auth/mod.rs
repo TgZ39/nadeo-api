@@ -58,7 +58,7 @@ impl OAuthInfo {
         Ok(json)
     }
 
-    /// Send a request to the nadeo OAuth API to get a new access token.
+    /// Send a request to the Nadeo OAuth API to get a new access token.
     pub(crate) async fn force_refresh(&mut self, client: &Client) -> Result<()> {
         let new = Self::new(&self.identifier, &self.secret, client).await?;
         self.token_type = new.token_type;

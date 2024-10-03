@@ -1,6 +1,9 @@
 use crate::auth::token::access_token::AccessToken;
 use crate::auth::token::refresh_token::RefreshToken;
-use crate::client::{EXPIRATION_TIME_BUFFER, NADEO_AUTH_URL, NADEO_REFRESH_URL, UBISOFT_APP_ID};
+use crate::client::{
+    EXPIRATION_TIME_BUFFER, NADEO_AUTH_URL, NADEO_REFRESH_URL, NADEO_SERVER_AUTH_URL,
+    UBISOFT_APP_ID,
+};
 use crate::request::metadata::MetaData;
 use crate::request::HttpMethod;
 use crate::{Error, NadeoRequest, Result};
@@ -57,6 +60,48 @@ impl AuthInfo {
         // get nadeo auth token
         let res = client
             .post(NADEO_AUTH_URL)
+            .headers(headers)
+            .json(&body)
+            .send()
+            .await?
+            .error_for_status()?;
+
+        let json = res.json::<Value>().await?;
+
+        let access_token = AccessToken::from_str(json["accessToken"].as_str().unwrap())?;
+        let refresh_token = RefreshToken::from_str(json["refreshToken"].as_str().unwrap())?;
+
+        Ok(Self {
+            service,
+            access_token,
+            refresh_token,
+        })
+    }
+
+    /// Create with a server account
+    pub(crate) async fn new_server(
+        service: AuthType,
+        meta_data: &MetaData,
+        username: &str,
+        password: &str,
+        client: &Client,
+    ) -> Result<Self> {
+        let mut headers = HeaderMap::new();
+        headers.insert("Content-Type", "application/json".parse().unwrap());
+
+        let auth_token = format!("Basic {}", encode_auth(username, password));
+        headers.insert("Authorization", auth_token.parse().unwrap());
+        headers.insert("User-Agent", meta_data.user_agent.parse().unwrap());
+
+        let body = json!(
+            {
+                "audience": service.to_string()
+            }
+        );
+
+        // get nadeo auth token
+        let res = client
+            .post(NADEO_SERVER_AUTH_URL)
             .headers(headers)
             .json(&body)
             .send()
@@ -181,6 +226,15 @@ impl AuthInfo {
     }
 }
 
+fn encode_auth(username: &str, password: &str) -> String {
+    let auth = format!("{}:{}", username, password);
+    let auth = auth.as_bytes();
+
+    let mut b64 = String::new();
+    BASE64_STANDARD.encode_string(auth, &mut b64);
+    b64
+}
+
 pub(crate) async fn get_ubi_auth_ticket(
     email: &str,
     password: &str,
@@ -193,15 +247,7 @@ pub(crate) async fn get_ubi_auth_ticket(
     headers.insert("Ubi-AppId", UBISOFT_APP_ID.parse().unwrap());
     headers.insert("User-Agent", meta_data.user_agent.parse().unwrap());
 
-    let ubi_auth_token = {
-        let auth = format!("{}:{}", email, password);
-        let auth = auth.as_bytes();
-
-        let mut b64 = String::new();
-        BASE64_STANDARD.encode_string(auth, &mut b64);
-
-        format!("Basic {b64}")
-    };
+    let ubi_auth_token = format!("Basic {}", encode_auth(email, password));
     headers.insert("Authorization", ubi_auth_token.parse().unwrap());
 
     // get ubisoft ticket
