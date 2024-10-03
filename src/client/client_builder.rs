@@ -30,6 +30,7 @@ impl NadeoClientBuilder {
     }
 
     /// Adds credentials for using [`AuthType::NadeoServices`] and [`AuthType::NadeoLiveServices`] using a server account.
+    /// [`NadeoClientBuilder`] will prefer [`NadeoClientBuilder::with_normal_auth`] if `with_normal_auth` and `with_server_auth` are added.
     pub fn with_server_auth(mut self, username: &str, password: &str) -> Self {
         self.server_auth = Some((username.to_string(), password.to_string()));
 
