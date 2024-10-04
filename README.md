@@ -40,12 +40,12 @@ Creating a request:
 ```rust
 use nadeo_api::NadeoRequest;
 use nadeo_api::auth::AuthType;
-use nadeo_api::request::HttpMethod;
+use nadeo_api::request::Method;
 
 let request = NadeoRequest::builder()
     .url("api_endpoint_url")
     .auth_type(AuthType::NadeoServices)
-    .method(HttpMethod::Get)
+    .method(Method::GET)
     .body("some text/json") // optional
     .build()?;
 ```

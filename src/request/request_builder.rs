@@ -1,20 +1,21 @@
 use crate::auth::AuthType;
-use crate::request::{HttpMethod, NadeoRequest};
+use crate::request::NadeoRequest;
 use crate::{Error, Result};
 use reqwest::header::{HeaderMap, IntoHeaderName};
+use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
 /// Used for creating [`NadeoRequest`]s.
-/// `URL`, [`HttpMethod`] and [`AuthType`] must be provided.
+/// `URL`, [`Method`] and [`AuthType`] must be provided.
 ///
 /// [`NadeoRequest`]: NadeoRequest
-/// [`HttpMethod`]: HttpMethod
+/// [`Method`]: Method
 /// [`AuthType`]: AuthType
 #[derive(Default)]
 pub struct NadeoRequestBuilder {
     auth_type: Option<AuthType>,
     url: Option<String>,
-    method: Option<HttpMethod>,
+    method: Option<Method>,
     headers: HeaderMap,
     body: Option<String>,
 }
@@ -44,7 +45,7 @@ impl NadeoRequestBuilder {
         self
     }
 
-    pub fn method(mut self, method: HttpMethod) -> Self {
+    pub fn method(mut self, method: Method) -> Self {
         self.method = Some(method);
 
         self
@@ -70,10 +71,10 @@ impl NadeoRequestBuilder {
     }
 
     /// Converts the `NadeoRequestBuilder` into a [`NadeoRequest`].
-    /// `URL`, [`HttpMethod`] and [`AuthType`] are required.
+    /// `URL`, [`Method`] and [`AuthType`] are required.
     ///
     /// [`NadeoRequest`]: NadeoRequest
-    /// [`HttpMethod`]: HttpMethod
+    /// [`Method`]: Method
     /// [`AuthType`]: AuthType
     pub fn build(self) -> Result<NadeoRequest> {
         if self.url.is_none() {

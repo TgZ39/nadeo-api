@@ -64,7 +64,7 @@ impl NadeoClient {
     /// ```rust
     /// # use nadeo_api::auth::AuthType;
     /// # use nadeo_api::NadeoClient;
-    /// # use nadeo_api::request::{HttpMethod, NadeoRequest};
+    /// # use nadeo_api::request::{Method, NadeoRequest};
     ///
     /// // create client
     /// let mut client = NadeoClient::builder()
@@ -77,7 +77,7 @@ impl NadeoClient {
     /// let request = NadeoRequest::builder()
     ///     .url("https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578")
     ///     .auth_type(AuthType::NadeoServices)
-    ///     .method(HttpMethod::Get)
+    ///     .method(Method::GET)
     ///     .build()?;
     ///
     /// // execute request

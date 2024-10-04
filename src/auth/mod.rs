@@ -5,7 +5,6 @@ use crate::client::{
     UBISOFT_APP_ID,
 };
 use crate::request::metadata::MetaData;
-use crate::request::HttpMethod;
 use crate::{Error, NadeoRequest, Result};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
@@ -200,14 +199,7 @@ impl AuthInfo {
         self.refresh(meta_data, client).await?;
         let token = format!("nadeo_v1 t={}", self.access_token.encode());
 
-        let api_request = match request.method {
-            HttpMethod::Get => client.get(request.url),
-            HttpMethod::Post => client.post(request.url),
-            HttpMethod::Put => client.put(request.url),
-            HttpMethod::Patch => client.patch(request.url),
-            HttpMethod::Delete => client.delete(request.url),
-            HttpMethod::Head => client.head(request.url),
-        };
+        let api_request = client.request(request.method, request.url);
 
         let mut res = api_request
             .header("Authorization", token.parse::<HeaderValue>().unwrap())

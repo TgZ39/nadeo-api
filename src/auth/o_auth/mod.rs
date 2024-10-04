@@ -1,7 +1,6 @@
 use crate::auth::AuthType;
 use crate::client::EXPIRATION_TIME_BUFFER;
 use crate::request::metadata::MetaData;
-use crate::request::HttpMethod;
 use crate::{NadeoRequest, Result};
 use chrono::Local;
 use reqwest::header::HeaderValue;
@@ -100,14 +99,7 @@ impl OAuthInfo {
         self.refresh(client).await?;
         let token = format!("Bearer {}", self.access_token);
 
-        let api_request = match request.method {
-            HttpMethod::Get => client.get(request.url),
-            HttpMethod::Post => client.post(request.url),
-            HttpMethod::Put => client.put(request.url),
-            HttpMethod::Patch => client.patch(request.url),
-            HttpMethod::Delete => client.delete(request.url),
-            HttpMethod::Head => client.head(request.url),
-        };
+        let api_request = client.request(request.method, request.url);
 
         let mut res = api_request
             .header("Authorization", token.parse::<HeaderValue>().unwrap())
