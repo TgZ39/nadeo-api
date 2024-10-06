@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0](https://github.com/TgZ39/nadeo-api/compare/v0.2.4...v0.3.0) - 2024-10-06
 
+### Changed
+
+- move from internal `HttpMethod` to [`http::Method`](https://docs.rs/http/latest/http/method/struct.Method.html)
+
 ### Other
 
 - Create release-plz.yml
