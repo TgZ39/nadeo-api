@@ -17,7 +17,7 @@ cargo add nadeo-api
 Via `Cargo.toml`:
 
 ```toml
-nadeo-api = "0.2.4"
+nadeo-api = "0.3.0"
 ```
 ## Getting started
 
