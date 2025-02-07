@@ -7,8 +7,8 @@ use parking_lot::Mutex;
 use reqwest::header::HeaderValue;
 use reqwest::{Client, Response};
 use serde::Deserialize;
-use std::cell::Cell;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicI64, Ordering};
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
@@ -20,7 +20,7 @@ pub(crate) struct OAuthInfo {
     #[serde(skip)]
     secret: String,
     #[serde(skip)]
-    exp: Cell<i64>,
+    exp: AtomicI64,
     access_token: Mutex<String>,
 }
 
@@ -51,7 +51,7 @@ impl OAuthInfo {
             .error_for_status()?;
 
         let mut info = res.json::<Self>().await?;
-        info.exp = Cell::new(Local::now().timestamp() + 3600);
+        info.exp = AtomicI64::new(Local::now().timestamp() + 3600);
         info.identifier = identifier.to_string();
         info.secret = secret.to_string();
 
@@ -63,7 +63,8 @@ impl OAuthInfo {
         let new = Self::new(&self.identifier, &self.secret, client).await?;
 
         *self.access_token.lock() = new.access_token.into_inner();
-        self.exp.set(new.exp.get());
+        self.exp
+            .store(new.exp.load(Ordering::Relaxed), Ordering::Relaxed);
 
         Ok(())
     }
@@ -81,7 +82,7 @@ impl OAuthInfo {
 
     /// Returns the amount of seconds until the token expires.
     pub(crate) fn expires_in(&self) -> i64 {
-        self.exp.get() - Local::now().timestamp()
+        self.exp.load(Ordering::Relaxed) - Local::now().timestamp()
     }
 
     /// Executes a [`NadeoRequest`].

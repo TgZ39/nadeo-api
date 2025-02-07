@@ -1,9 +1,8 @@
 use crate::auth::o_auth::OAuthInfo;
-use std::rc::Rc;
-
 use crate::auth::{AuthInfo, AuthType};
 use crate::request::NadeoRequest;
 use crate::{Error, Result};
+use std::sync::Arc;
 
 use reqwest::{Client, IntoUrl, Method, Response};
 
@@ -43,10 +42,10 @@ pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 #[derive(Debug, Clone)]
 pub struct NadeoClient {
     pub(crate) client: Client,
-    pub(crate) normal_auth: Option<Rc<AuthInfo>>,
-    pub(crate) live_auth: Option<Rc<AuthInfo>>,
-    pub(crate) o_auth: Option<Rc<OAuthInfo>>,
-    pub(crate) meta_data: MetaData,
+    pub(crate) normal_auth: Option<Arc<AuthInfo>>,
+    pub(crate) live_auth: Option<Arc<AuthInfo>>,
+    pub(crate) o_auth: Option<Arc<OAuthInfo>>,
+    pub(crate) meta_data: Arc<MetaData>,
 }
 
 impl NadeoClient {
