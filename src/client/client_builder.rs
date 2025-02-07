@@ -1,4 +1,4 @@
-use crate::auth::o_auth::OAuthInfo;
+use crate::auth::oauth::OAuthInfo;
 use crate::auth::{AuthInfo, AuthType};
 use crate::request::metadata::MetaData;
 use crate::Result;

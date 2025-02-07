@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
 
-pub mod o_auth;
+pub mod oauth;
 pub mod token;
 
 const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/sessions";

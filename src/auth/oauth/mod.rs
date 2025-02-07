@@ -30,7 +30,7 @@ impl OAuthInfo {
     /// # Examples
     ///
     /// ```rust
-    /// # use nadeo_api::auth::o_auth::OAuthInfo;
+    /// # use nadeo_api::auth::oauth::OAuthInfo;
     ///
     /// let client = reqwest::Client::new();
     /// let info = OAuthInfo::new("your_identifier", "your_secret", &client).await?;
