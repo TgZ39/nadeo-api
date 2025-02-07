@@ -10,7 +10,7 @@
 //!
 //! ```rust
 //! # async {
-//!  use nadeo_api::prelude::*;
+//!  use nadeo_api::NadeoClient;
 //!
 //!  let client: NadeoClient = NadeoClient::builder()
 //!     .user_agent("Foo Project / example@example.com") // required
@@ -26,7 +26,7 @@
 //!
 //! ```rust
 //! # async {
-//! use nadeo_api::prelude::*;
+//!  use nadeo_api::{NadeoClient, AuthType, Response, request::NadeoRequestBuilder};
 //!  let url = "https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578";
 //!  let req: NadeoRequestBuilder = client.get(url, AuthType::NadeoServices)?;
 //!
@@ -44,5 +44,13 @@
 pub mod auth;
 pub mod client;
 pub mod error;
-pub mod prelude;
 pub mod request;
+
+pub use crate::auth::AuthType;
+pub use crate::client::NadeoClient;
+pub use crate::error::{Error, Result};
+pub use crate::request::NadeoRequest;
+
+pub use reqwest::Method;
+pub use reqwest::Response;
+pub use reqwest::Url;

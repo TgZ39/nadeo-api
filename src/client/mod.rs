@@ -6,9 +6,10 @@ use std::sync::Arc;
 
 use reqwest::{Client, IntoUrl, Method, Response};
 
-use crate::client::client_builder::NadeoClientBuilder;
 use crate::request::metadata::MetaData;
 use crate::request::request_builder::NadeoRequestBuilder;
+
+pub use client_builder::{NadeoClientBuilder, NadeoClientBuilderError};
 
 pub mod client_builder;
 
@@ -85,7 +86,7 @@ impl NadeoClient {
     /// Gets the clubtag of a player given the *accountID*.
     /// ```rust
     /// # async {
-    /// use nadeo_api::prelude::*;
+    /// use nadeo_api::{NadeoClient, AuthType, Response, request::NadeoRequestBuilder};
     ///
     ///  let client: NadeoClient = NadeoClient::builder()
     ///     .user_agent("Testing Project / example@example.com")

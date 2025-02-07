@@ -18,7 +18,7 @@ pub struct NadeoRequestBuilder {
 
 /// Error when the Request is invalid. For example if a required field is missing.
 #[derive(thiserror::Error, Debug, Serialize, Deserialize)]
-pub enum RequestBuilderError {
+pub enum NadeoRequestBuilderError {
     #[error("no URL was provided")]
     MissingUrl,
     #[error("no HTTP method was provided")]
@@ -151,7 +151,7 @@ impl NadeoRequestBuilder {
     /// # Example
     /// ```rust
     /// # async {
-    ///  use nadeo_api::prelude::*;
+    ///  use nadeo_api::{NadeoClient, AuthType, Response, request::NadeoRequestBuilder};
     ///
     ///  let url = "https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578";
     ///  let req: NadeoRequestBuilder = client.get(url, AuthType::NadeoServices)?;

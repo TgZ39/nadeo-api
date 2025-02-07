@@ -10,5 +10,5 @@ pub enum Error {
     MissingCredentials { auth_type: AuthType },
     ClientBuilderError(#[from] crate::client::client_builder::NadeoClientBuilderError),
     Token(#[from] crate::auth::token::ParseTokenError),
-    Request(#[from] crate::request::request_builder::RequestBuilderError),
+    Request(#[from] crate::request::request_builder::NadeoRequestBuilderError),
 }

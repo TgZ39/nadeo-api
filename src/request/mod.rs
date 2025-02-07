@@ -1,5 +1,6 @@
 use crate::auth::AuthType;
 use http::Method;
+pub use request_builder::{NadeoRequestBuilder, NadeoRequestBuilderError};
 use reqwest::header::HeaderMap;
 use reqwest::{Body, Request, Url, Version};
 use std::time::Duration;

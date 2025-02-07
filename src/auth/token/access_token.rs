@@ -39,7 +39,7 @@ impl FromStr for AccessToken {
 }
 
 impl AccessToken {
-    /// Serializes the access token into the format required for API requests.
+    // Serializes the access token into the format required for API requests.
     pub(crate) fn encode(&self) -> String {
         format!(
             "{}.{}.{}",
@@ -49,15 +49,13 @@ impl AccessToken {
         )
     }
 
-    /// Returns the amount of **seconds** until the access token expires.
+    // Returns the amount of **seconds** until the access token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.payload.expires_in()
     }
 }
 
-/// Deserialized version of the payload of an [`AccessToken`].
-///
-/// [`AccessToken`]: AccessToken
+// Deserialized version of the payload of an `AccessToken`.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct AccessPayload {
     jti: String,
@@ -80,7 +78,7 @@ pub(crate) struct AccessPayload {
 impl FromStr for AccessPayload {
     type Err = Error;
 
-    /// Deserializes the payload of an access token.
+    // Deserializes the payload of an access token.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let json = BASE64_URL_SAFE_NO_PAD
             .decode(s)
@@ -92,9 +90,7 @@ impl FromStr for AccessPayload {
 }
 
 impl AccessPayload {
-    /// Serializes the payload (part of the [`AccessToken`]) into the format required for API requests.
-    ///
-    /// [`AccessToken`]: AccessToken
+    // Serializes the payload (part of the `AccessToken`) into the format required for API requests.
     pub(crate) fn encode(&self) -> String {
         let data = serde_json::to_string(self).unwrap();
 
@@ -103,7 +99,7 @@ impl AccessPayload {
         buf
     }
 
-    /// Returns the amount of **seconds** until the access token expires.
+    // Returns the amount of **seconds** until the access token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.exp - Local::now().timestamp()
     }
