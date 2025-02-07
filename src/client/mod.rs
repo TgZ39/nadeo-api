@@ -129,6 +129,22 @@ impl NadeoClient {
         self.request(Method::POST, url, auth_type)
     }
 
+    pub fn put<U: IntoUrl>(&self, url: U, auth_type: AuthType) -> Result<NadeoRequestBuilder> {
+        self.request(Method::PUT, url, auth_type)
+    }
+
+    pub fn patch<U: IntoUrl>(&self, url: U, auth_type: AuthType) -> Result<NadeoRequestBuilder> {
+        self.request(Method::PATCH, url, auth_type)
+    }
+
+    pub fn delete<U: IntoUrl>(&self, url: U, auth_type: AuthType) -> Result<NadeoRequestBuilder> {
+        self.request(Method::DELETE, url, auth_type)
+    }
+
+    pub fn head<U: IntoUrl>(&self, url: U, auth_type: AuthType) -> Result<NadeoRequestBuilder> {
+        self.request(Method::HEAD, url, auth_type)
+    }
+
     pub fn request<U: IntoUrl>(
         &self,
         method: Method,
