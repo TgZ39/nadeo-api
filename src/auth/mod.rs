@@ -122,7 +122,7 @@ impl AuthInfo {
 
     /// Forces a refresh request with the Nadeo API. [`refresh`] should be preferred over `force_refresh` in most cases.
     ///
-    /// [`refresh`]: AuthInfo::refresh
+    /// [`refresh`]: AuthInfo::try_refresh
     pub(crate) async fn force_refresh(&self, meta_data: &MetaData, client: &Client) -> Result<()> {
         let mut headers = HeaderMap::new();
 
@@ -167,7 +167,7 @@ impl AuthInfo {
     ///
     /// [`Error`]: Error
     /// [`force_refresh`]: AuthInfo::force_refresh
-    pub(crate) async fn refresh(&self, meta_data: &MetaData, client: &Client) -> Result<bool> {
+    pub(crate) async fn try_refresh(&self, meta_data: &MetaData, client: &Client) -> Result<bool> {
         if !self.expires_in() < EXPIRATION_TIME_BUFFER {
             return Ok(false);
         }
@@ -193,7 +193,7 @@ impl AuthInfo {
     ) -> Result<Response> {
         assert_eq!(self.service, request.auth_type);
 
-        self.refresh(meta_data, client).await?;
+        self.try_refresh(meta_data, client).await?;
 
         let token = format!("nadeo_v1 t={}", self.access_token.lock().encode());
         request

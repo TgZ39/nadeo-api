@@ -10,7 +10,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
+const OAUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
 /// Contains information used for OAuth authentication. For creating an OAuth app look [here](https://api.trackmania.com/login).
 #[derive(Debug, Deserialize)]
@@ -44,7 +44,7 @@ impl OAuthInfo {
         form.insert("client_secret", secret);
 
         let res = client
-            .post(O_AUTH_URL)
+            .post(OAUTH_URL)
             .form(&form)
             .send()
             .await?
