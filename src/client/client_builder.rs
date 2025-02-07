@@ -5,6 +5,7 @@ use crate::Result;
 use crate::{auth, Error, NadeoClient};
 use futures::future::join3;
 use reqwest::Client;
+use std::rc::Rc;
 use thiserror::Error;
 
 type EMail = String;
@@ -144,13 +145,13 @@ impl NadeoClientBuilder {
 
         // extract results
         if let Some(auth) = normal_auth_res {
-            normal_auth = Some(auth?);
+            normal_auth = Some(Rc::new(auth?));
         }
         if let Some(auth) = live_auth_res {
-            live_auth = Some(auth?);
+            live_auth = Some(Rc::new(auth?));
         }
         if let Some(auth) = oauth_res {
-            o_auth = Some(auth?);
+            o_auth = Some(Rc::new(auth?));
         }
 
         Ok(NadeoClient {

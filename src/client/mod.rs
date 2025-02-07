@@ -1,13 +1,15 @@
 use crate::auth::o_auth::OAuthInfo;
+use std::rc::Rc;
 
 use crate::auth::{AuthInfo, AuthType};
 use crate::request::NadeoRequest;
 use crate::{Error, Result};
 
-use reqwest::{Client, Response};
+use reqwest::{Client, IntoUrl, Method, Response};
 
 use crate::client::client_builder::NadeoClientBuilder;
 use crate::request::metadata::MetaData;
+use crate::request::request_builder::NadeoRequestBuilder;
 use thiserror::Error;
 
 pub mod client_builder;
@@ -41,9 +43,9 @@ pub(crate) const EXPIRATION_TIME_BUFFER: i64 = 60;
 #[derive(Debug, Clone)]
 pub struct NadeoClient {
     pub(crate) client: Client,
-    pub(crate) normal_auth: Option<AuthInfo>,
-    pub(crate) live_auth: Option<AuthInfo>,
-    pub(crate) o_auth: Option<OAuthInfo>,
+    pub(crate) normal_auth: Option<Rc<AuthInfo>>,
+    pub(crate) live_auth: Option<Rc<AuthInfo>>,
+    pub(crate) o_auth: Option<Rc<OAuthInfo>>,
     pub(crate) meta_data: MetaData,
 }
 
@@ -87,37 +89,59 @@ impl NadeoClient {
     /// [`Error`]: crate::Error
     /// [`NadeoRequest`]: NadeoRequest
     /// [`NadeoClient`]: NadeoClient
-    pub async fn execute(&mut self, request: NadeoRequest) -> Result<Response> {
+    pub async fn execute(&self, request: NadeoRequest) -> Result<Response> {
         match request.auth_type {
             AuthType::NadeoServices => {
-                if let Some(auth) = &mut self.normal_auth {
+                if let Some(auth) = &self.normal_auth {
                     auth.execute(request, &self.meta_data, &self.client).await
                 } else {
-                    Err(Error::from(ClientError::MissingNadeoAuth))
+                    Err(Error::from(ClientError::MissingCredentials {
+                        auth_type: request.auth_type,
+                    }))
                 }
             }
             AuthType::NadeoLiveServices => {
-                if let Some(auth) = &mut self.live_auth {
+                if let Some(auth) = &self.live_auth {
                     auth.execute(request, &self.meta_data, &self.client).await
                 } else {
-                    Err(Error::from(ClientError::MissingNadeoAuth))
+                    Err(Error::from(ClientError::MissingCredentials {
+                        auth_type: request.auth_type,
+                    }))
                 }
             }
             AuthType::OAuth => {
-                if let Some(auth) = &mut self.o_auth {
+                if let Some(auth) = &self.o_auth {
                     auth.execute(request, &self.meta_data, &self.client).await
                 } else {
-                    Err(Error::from(ClientError::MissingOAuth))
+                    Err(Error::from(ClientError::MissingCredentials {
+                        auth_type: request.auth_type,
+                    }))
                 }
             }
         }
+    }
+
+    pub fn get<U: IntoUrl>(&self, url: U, auth_type: AuthType) -> Result<NadeoRequestBuilder> {
+        self.request(Method::GET, url, auth_type)
+    }
+
+    pub fn post<U: IntoUrl>(&self, url: U, auth_type: AuthType) -> Result<NadeoRequestBuilder> {
+        self.request(Method::POST, url, auth_type)
+    }
+
+    pub fn request<U: IntoUrl>(
+        &self,
+        method: Method,
+        url: U,
+        auth_type: AuthType,
+    ) -> Result<NadeoRequestBuilder> {
+        let req = NadeoRequest::new(method, url.into_url()?, auth_type);
+        Ok(NadeoRequestBuilder::from_parts(self, req))
     }
 }
 
 #[derive(Error, Debug)]
 pub enum ClientError {
-    #[error("Client does not have credentials for NadeoServices or NadeoLiveServices")]
-    MissingNadeoAuth,
-    #[error("Client does not have OAuth credentials")]
-    MissingOAuth,
+    #[error("missing credentials to execute request")]
+    MissingCredentials { auth_type: AuthType },
 }

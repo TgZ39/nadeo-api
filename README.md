@@ -19,6 +19,7 @@ Via `Cargo.toml`:
 ```toml
 nadeo-api = "0.3.0"
 ```
+
 ## Getting started
 
 Creating a client:
@@ -27,12 +28,12 @@ Creating a client:
 use nadeo_api::NadeoClient;
 
 let mut client = NadeoClient::builder()
-    .with_normal_auth("my_email", "my_password")
-    .with_server_auth("my_username", "my_other_password")
-    .with_oauth("my_identifier", "my_secret")
-    .user_agent("My cool Application / my.email@domain.com")
-    .build()
-    .await?;
+.with_normal_auth("my_email", "my_password")
+.with_server_auth("my_username", "my_other_password")
+.with_oauth("my_identifier", "my_secret")
+.user_agent("My cool Application / my.email@domain.com")
+.build()
+.await?;
 ```
 
 Creating a request:
@@ -43,11 +44,11 @@ use nadeo_api::auth::AuthType;
 use nadeo_api::request::Method;
 
 let request = NadeoRequest::builder()
-    .url("api_endpoint_url")
-    .auth_type(AuthType::NadeoServices)
-    .method(Method::GET)
-    .body("some text/json") // optional
-    .build()?;
+.url("api_endpoint_url")
+.auth_type(AuthType::NadeoServices)
+.method(Method::GET)
+.body("some text/json") // optional
+.build() ?;
 ```
 
 Executing a request:
@@ -58,7 +59,6 @@ let request = /* snap */;
 
 let response = client.execute(request).await?;
 ```
-
 
 ## License
 

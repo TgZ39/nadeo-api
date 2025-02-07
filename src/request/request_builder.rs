@@ -1,9 +1,11 @@
 use crate::auth::AuthType;
 use crate::request::NadeoRequest;
-use crate::{Error, Result};
-use reqwest::header::{HeaderMap, IntoHeaderName};
-use reqwest::Method;
+use crate::{Error, NadeoClient, Result};
+use http::{HeaderMap, HeaderName, HeaderValue, Version};
+use reqwest::multipart::Form;
+use reqwest::{Body, RequestBuilder, Response};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 /// Used for creating [`NadeoRequest`]s.
 /// `URL`, [`Method`] and [`AuthType`] must be provided.
@@ -11,13 +13,10 @@ use serde::{Deserialize, Serialize};
 /// [`NadeoRequest`]: NadeoRequest
 /// [`Method`]: Method
 /// [`AuthType`]: AuthType
-#[derive(Default)]
 pub struct NadeoRequestBuilder {
-    auth_type: Option<AuthType>,
-    url: Option<String>,
-    method: Option<Method>,
-    headers: HeaderMap,
-    body: Option<String>,
+    pub(crate) client: NadeoClient,
+    pub(crate) request: RequestBuilder,
+    pub(crate) auth_type: AuthType,
 }
 
 /// Error when the Request is invalid. For example if a required field is missing.
@@ -32,67 +31,111 @@ pub enum RequestBuilderError {
 }
 
 impl NadeoRequestBuilder {
-    /// Adds a text body to the request. Usually JSON.
-    pub fn body(mut self, json: &str) -> Self {
-        self.body = Some(json.to_string());
-
-        self
+    pub fn from_parts(client: &NadeoClient, request: NadeoRequest) -> Self {
+        Self {
+            client: client.clone(),
+            request: RequestBuilder::from_parts(client.client.clone(), request.request),
+            auth_type: request.auth_type,
+        }
     }
 
-    pub fn url(mut self, url: &str) -> Self {
-        self.url = Some(url.to_string());
-
-        self
-    }
-
-    pub fn method(mut self, method: Method) -> Self {
-        self.method = Some(method);
-
-        self
-    }
-
-    pub fn auth_type(mut self, auth_type: AuthType) -> Self {
-        self.auth_type = Some(auth_type);
-
-        self
-    }
-
-    /// Adds a header to the request. Adding a header should not be required in most cases.
-    ///
-    /// # Panics
-    ///
-    /// Panics if there is an error parsing the value.
-    pub fn add_header<K>(mut self, key: K, val: &str) -> Self
+    pub fn header<K, V>(mut self, key: K, value: V) -> Self
     where
-        K: IntoHeaderName,
+        HeaderName: TryFrom<K>,
+        <HeaderName as TryFrom<K>>::Error: Into<http::Error>,
+        HeaderValue: TryFrom<V>,
+        <HeaderValue as TryFrom<V>>::Error: Into<http::Error>,
     {
-        self.headers.insert(key, val.parse().unwrap());
+        self.request = self.request.header(key, value);
+
         self
     }
 
-    /// Converts the `NadeoRequestBuilder` into a [`NadeoRequest`].
-    /// `URL`, [`Method`] and [`AuthType`] are required.
-    ///
-    /// [`NadeoRequest`]: NadeoRequest
-    /// [`Method`]: Method
-    /// [`AuthType`]: AuthType
+    pub fn headers(mut self, headers: HeaderMap) -> Self {
+        self.request = self.request.headers(headers);
+
+        self
+    }
+
+    pub fn body<T: Into<Body>>(mut self, body: T) -> Self {
+        self.request = self.request.body(body);
+
+        self
+    }
+
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.request = self.request.timeout(timeout);
+
+        self
+    }
+
+    pub fn multipart(mut self, multipart: Form) -> Self {
+        self.request = self.request.multipart(multipart);
+
+        self
+    }
+
+    pub fn query<T: Serialize + ?Sized>(mut self, query: &T) -> Self {
+        self.request = self.request.query(query);
+
+        self
+    }
+
+    pub fn version(mut self, version: Version) -> Self {
+        self.request = self.request.version(version);
+
+        self
+    }
+
+    pub fn form<T: Serialize + ?Sized>(mut self, form: &T) -> Self {
+        self.request = self.request.form(form);
+
+        self
+    }
+
+    pub fn json<T: Serialize + ?Sized>(mut self, json: &T) -> Self {
+        self.request = self.request.json(json);
+
+        self
+    }
+
+    pub fn fetch_mode_no_cors(mut self) -> Self {
+        self.request = self.request.fetch_mode_no_cors();
+
+        self
+    }
+
     pub fn build(self) -> Result<NadeoRequest> {
-        if self.url.is_none() {
-            return Err(Error::from(RequestBuilderError::MissingUrl));
-        }
-        if self.method.is_none() {
-            return Err(Error::from(RequestBuilderError::MissingHttpMethod));
-        }
-        if self.auth_type.is_none() {
-            return Err(Error::from(RequestBuilderError::MissingAuthType));
-        }
+        let request = self.request.build()?;
 
         Ok(NadeoRequest {
-            auth_type: self.auth_type.unwrap(),
-            method: self.method.unwrap(),
-            url: self.url.unwrap(),
-            headers: self.headers,
-            body: self.body,
+            request,
+            auth_type: self.auth_type,
+        })
+    }
+
+    pub fn build_split(self) -> (NadeoClient, Result<NadeoRequest>) {
+        let request = match self.request.build() {
+            Ok(req) => req,
+            Err(err) => return (self.client, Err(Error::from(err))),
+        };
+
+        let nadeo_request = NadeoRequest {
+            request,
+            auth_type: self.auth_type,
+        };
+        (self.client, Ok(nadeo_request))
+    }
+
+    pub async fn send(self) -> Result<Response> {
+        self.client.clone().execute(self.build()?).await
+    }
+
+    pub fn try_clone(&self) -> Option<Self> {
+        self.request.try_clone().map(|request| Self {
+            client: self.client.clone(),
+            request,
+            auth_type: self.auth_type,
         })
     }
 }

@@ -3,24 +3,25 @@ use crate::client::EXPIRATION_TIME_BUFFER;
 use crate::request::metadata::MetaData;
 use crate::{NadeoRequest, Result};
 use chrono::Local;
+use parking_lot::Mutex;
 use reqwest::header::HeaderValue;
 use reqwest::{Client, Response};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use std::cell::Cell;
 use std::collections::HashMap;
 
 const O_AUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
 /// Contains information used for OAuth authentication. For creating an OAuth app look [here](https://api.trackmania.com/login).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct OAuthInfo {
     #[serde(skip)]
     identifier: String,
     #[serde(skip)]
     secret: String,
-    pub(crate) token_type: String,
     #[serde(skip)]
-    pub(crate) exp: i64,
-    pub(crate) access_token: String,
+    exp: Cell<i64>,
+    access_token: Mutex<String>,
 }
 
 impl OAuthInfo {
@@ -49,27 +50,27 @@ impl OAuthInfo {
             .await?
             .error_for_status()?;
 
-        let mut json = res.json::<Self>().await?;
-        json.exp = Local::now().timestamp() + 3600;
-        json.identifier = identifier.to_string();
-        json.secret = secret.to_string();
+        let mut info = res.json::<Self>().await?;
+        info.exp = Cell::new(Local::now().timestamp() + 3600);
+        info.identifier = identifier.to_string();
+        info.secret = secret.to_string();
 
-        Ok(json)
+        Ok(info)
     }
 
     /// Send a request to the Nadeo OAuth API to get a new access token.
-    pub(crate) async fn force_refresh(&mut self, client: &Client) -> Result<()> {
+    pub(crate) async fn force_refresh(&self, client: &Client) -> Result<()> {
         let new = Self::new(&self.identifier, &self.secret, client).await?;
-        self.token_type = new.token_type;
-        self.access_token = new.access_token;
-        self.secret = new.secret;
+
+        *self.access_token.lock() = new.access_token.into_inner();
+        self.exp.set(new.exp.get());
 
         Ok(())
     }
 
     /// Checks whether the access token is expired, if so [`OAuthInfo::force_refresh`] is called and `Ok(true)` or `Err(Error)` is returned.
     /// If the token is still valid `Ok(false)` is returned.
-    pub(crate) async fn refresh(&mut self, client: &Client) -> Result<bool> {
+    pub(crate) async fn try_refresh(&self, client: &Client) -> Result<bool> {
         if self.expires_in() < EXPIRATION_TIME_BUFFER {
             self.force_refresh(client).await?;
             return Ok(true);
@@ -80,7 +81,7 @@ impl OAuthInfo {
 
     /// Returns the amount of seconds until the token expires.
     pub(crate) fn expires_in(&self) -> i64 {
-        self.exp - Local::now().timestamp()
+        self.exp.get() - Local::now().timestamp()
     }
 
     /// Executes a [`NadeoRequest`].
@@ -89,31 +90,25 @@ impl OAuthInfo {
     ///
     /// Panics if the `AuthType` of the request doesn't match `OAuth`.
     pub(crate) async fn execute(
-        &mut self,
-        request: NadeoRequest,
+        &self,
+        mut request: NadeoRequest,
         meta_data: &MetaData,
         client: &Client,
     ) -> Result<Response> {
         assert_eq!(request.auth_type, AuthType::OAuth);
 
-        self.refresh(client).await?;
-        let token = format!("Bearer {}", self.access_token);
+        self.try_refresh(client).await?;
 
-        let api_request = client.request(request.method, request.url);
+        let token = format!("Bearer {}", self.access_token.lock());
+        request
+            .headers_mut()
+            .insert("Authorization", token.parse::<HeaderValue>().unwrap());
+        request.headers_mut().insert(
+            "User-Agent",
+            meta_data.user_agent.parse::<HeaderValue>().unwrap(),
+        );
 
-        let mut res = api_request
-            .header("Authorization", token.parse::<HeaderValue>().unwrap())
-            .header(
-                "User-Agent",
-                meta_data.user_agent.parse::<HeaderValue>().unwrap(),
-            )
-            .headers(request.headers);
-        if let Some(json) = request.body {
-            res = res.body(json);
-        }
-
-        let res = res.send().await?.error_for_status()?;
-
-        Ok(res)
+        let resp = client.execute(request.request).await?;
+        Ok(resp)
     }
 }
