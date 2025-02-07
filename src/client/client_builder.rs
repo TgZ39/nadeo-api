@@ -1,8 +1,9 @@
+use crate::auth;
 use crate::auth::oauth::OAuthInfo;
 use crate::auth::{AuthInfo, AuthType};
+use crate::client::NadeoClient;
+use crate::error::*;
 use crate::request::metadata::MetaData;
-use crate::Result;
-use crate::{auth, Error, NadeoClient};
 use futures::future::join3;
 use reqwest::Client;
 use std::sync::Arc;
@@ -24,6 +25,7 @@ pub struct NadeoClientBuilder {
 
 impl NadeoClientBuilder {
     /// Adds credentials for using [`AuthType::NadeoServices`] and [`AuthType::NadeoLiveServices`].
+    /// Email and password of an ubisoft account are required.
     pub fn with_normal_auth(mut self, email: &str, password: &str) -> Self {
         self.normal_auth = Some((email.to_string(), password.to_string()));
 
@@ -47,28 +49,14 @@ impl NadeoClientBuilder {
 
     /// Adds a UserAgent which is sent along with each [`NadeoRequest`].
     /// This is required because Ubisoft blocks some default UserAgents.
-    /// An example of a *good* UserAgent is:
-    /// - `My amazing app / my.email.address@gmail.com`
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use nadeo_api::NadeoClient;
-    /// let client = NadeoClient::builder()
-    ///     .with_normal_auth("my_email", "my_password")
-    ///     .user_agent("API Testing / mustermann.max@gmail.com") // not a real email
-    ///     .build()
-    ///     .await?;
-    /// ```
-    ///
-    /// [`NadeoRequest`]: crate::NadeoRequest
+    /// An example of a *good* UserAgent is: `My amazing app / my.email.address@gmail.com`
     pub fn user_agent(mut self, user_agent: &str) -> Self {
         self.user_agent = Some(user_agent.to_string());
 
         self
     }
 
-    /// Trys to build a [`NadeoClient`].
+    /// Tries to build a [`NadeoClient`].
     pub async fn build(self) -> Result<NadeoClient> {
         if self.o_auth.is_none() && self.normal_auth.is_none() && self.server_auth.is_none() {
             return Err(Error::from(NadeoClientBuilderError::MissingCredentials));

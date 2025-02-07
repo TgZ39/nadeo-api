@@ -4,8 +4,9 @@ use crate::client::{
     EXPIRATION_TIME_BUFFER, NADEO_AUTH_URL, NADEO_REFRESH_URL, NADEO_SERVER_AUTH_URL,
     UBISOFT_APP_ID,
 };
+use crate::error::*;
 use crate::request::metadata::MetaData;
-use crate::{Error, NadeoRequest, Result};
+use crate::request::NadeoRequest;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use parking_lot::Mutex;
@@ -23,13 +24,12 @@ const UBISOFT_AUTH_URL: &str = "https://public-ubiservices.ubi.com/v3/profiles/s
 /// Defines authentication credentials used for the Nadeo API.
 #[derive(strum::Display, Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq)]
 pub enum AuthType {
-    #[strum(to_string = "NadeoServices")]
     NadeoServices,
-    #[strum(to_string = "NadeoLiveServices")]
     NadeoLiveServices,
     OAuth,
 }
 
+// Contains authentication information for `NadeoServices` and `NadeoLiveServices`.
 #[derive(Debug, Deserialize)]
 pub(crate) struct AuthInfo {
     pub service: AuthType,
@@ -38,6 +38,7 @@ pub(crate) struct AuthInfo {
 }
 
 impl AuthInfo {
+    // Creates `AuthInfo` gives credentials for an ubisoft account.
     pub(crate) async fn new(
         service: AuthType,
         ticket: &str,
@@ -78,7 +79,7 @@ impl AuthInfo {
         })
     }
 
-    /// Create with a server account
+    // Creates `AuthInfo` gives credentials for a server account.
     pub(crate) async fn new_server(
         service: AuthType,
         meta_data: &MetaData,
@@ -120,9 +121,7 @@ impl AuthInfo {
         })
     }
 
-    /// Forces a refresh request with the Nadeo API. [`refresh`] should be preferred over `force_refresh` in most cases.
-    ///
-    /// [`refresh`]: AuthInfo::try_refresh
+    /// Forces a refresh request with the Nadeo API.
     pub(crate) async fn force_refresh(&self, meta_data: &MetaData, client: &Client) -> Result<()> {
         let mut headers = HeaderMap::new();
 
@@ -157,16 +156,8 @@ impl AuthInfo {
         Ok(())
     }
 
-    /// Checks whether the token is expired. If it is [`force_refresh`] is called.
-    /// If the refresh was successful `Ok(true)` is returned but if it fails `Err(Error)` is returned.
-    /// If the token is not expired `Ok(false)` is returned and a token refresh is not attempted.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if the token is expired and the refresh request fails.
-    ///
-    /// [`Error`]: Error
-    /// [`force_refresh`]: AuthInfo::force_refresh
+    // Refreshes the authentication credentials if they are about to expire.
+    // Returns `Ok(false)` if they were not expired and `Ok(true)` if they were.
     pub(crate) async fn try_refresh(&self, meta_data: &MetaData, client: &Client) -> Result<bool> {
         if !self.expires_in() < EXPIRATION_TIME_BUFFER {
             return Ok(false);
@@ -175,16 +166,13 @@ impl AuthInfo {
         self.force_refresh(meta_data, client).await.map(|_| true)
     }
 
-    /// Returns the amount of **seconds** until the token expires.
+    // Returns the amount of **seconds** until the token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.access_token.lock().expires_in()
     }
 
-    /// Executes a [`NadeoRequest`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if the service of the [`AuthInfo`] and the [`NadeoRequest`] are not the same.
+    // Executes a `NadeoRequest`.
+    // Panics if the requests `AuthType` doesn't match the `AuthType` of self.
     pub(crate) async fn execute(
         &self,
         mut request: NadeoRequest,
@@ -209,6 +197,7 @@ impl AuthInfo {
     }
 }
 
+// Base64 encode username and password.
 fn encode_auth(username: &str, password: &str) -> String {
     let auth = format!("{}:{}", username, password);
     let auth = auth.as_bytes();
@@ -218,6 +207,7 @@ fn encode_auth(username: &str, password: &str) -> String {
     b64
 }
 
+// Gets an ubi auth ticket given an email and password from an ubisoft account.
 pub(crate) async fn get_ubi_auth_ticket(
     email: &str,
     password: &str,

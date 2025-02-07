@@ -1,7 +1,8 @@
 use crate::auth::AuthType;
 use crate::client::EXPIRATION_TIME_BUFFER;
+use crate::error::*;
 use crate::request::metadata::MetaData;
-use crate::{NadeoRequest, Result};
+use crate::request::NadeoRequest;
 use chrono::Local;
 use parking_lot::Mutex;
 use reqwest::header::HeaderValue;
@@ -12,7 +13,8 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 const OAUTH_URL: &str = "https://api.trackmania.com/api/access_token";
 
-/// Contains information used for OAuth authentication. For creating an OAuth app look [here](https://api.trackmania.com/login).
+// Contains information used for OAuth authentication.
+// For creating an OAuth app look here: https://api.trackmania.com/login.
 #[derive(Debug, Deserialize)]
 pub(crate) struct OAuthInfo {
     #[serde(skip)]
@@ -25,18 +27,7 @@ pub(crate) struct OAuthInfo {
 }
 
 impl OAuthInfo {
-    /// Requests access token using OAuth credentials. This function is used internally and OAuth should only be used through the [`NadeoClient`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use nadeo_api::auth::oauth::OAuthInfo;
-    ///
-    /// let client = reqwest::Client::new();
-    /// let info = OAuthInfo::new("your_identifier", "your_secret", &client).await?;
-    /// ```
-    ///
-    /// [`NadeoClient`]: crate::NadeoClient
+    // Authenticates with the Nadeo API using OAuth credentials.
     pub(crate) async fn new(identifier: &str, secret: &str, client: &Client) -> Result<Self> {
         let mut form = HashMap::new();
         form.insert("grant_type", "client_credentials");
@@ -58,7 +49,7 @@ impl OAuthInfo {
         Ok(info)
     }
 
-    /// Send a request to the Nadeo OAuth API to get a new access token.
+    // Refreshes the access token using the `identifier` and `secret` NOT the refresh token
     pub(crate) async fn force_refresh(&self, client: &Client) -> Result<()> {
         let new = Self::new(&self.identifier, &self.secret, client).await?;
 
@@ -69,8 +60,8 @@ impl OAuthInfo {
         Ok(())
     }
 
-    /// Checks whether the access token is expired, if so [`OAuthInfo::force_refresh`] is called and `Ok(true)` or `Err(Error)` is returned.
-    /// If the token is still valid `Ok(false)` is returned.
+    // Checks whether the access token is expired, if so `OAuthInfo::force_refresh` is called and `Ok(true)` or `Err(Error)` is returned.
+    // If the token is still valid `Ok(false)` is returned.
     pub(crate) async fn try_refresh(&self, client: &Client) -> Result<bool> {
         if self.expires_in() < EXPIRATION_TIME_BUFFER {
             self.force_refresh(client).await?;
@@ -80,16 +71,13 @@ impl OAuthInfo {
         Ok(false)
     }
 
-    /// Returns the amount of seconds until the token expires.
+    // Returns the amount of seconds until the token expires.
     pub(crate) fn expires_in(&self) -> i64 {
         self.exp.load(Ordering::Relaxed) - Local::now().timestamp()
     }
 
-    /// Executes a [`NadeoRequest`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if the `AuthType` of the request doesn't match `OAuth`.
+    // Executes a `NadeoRequest`.
+    // Panics if the requests `AuthType` doesn't match OAuth.
     pub(crate) async fn execute(
         &self,
         mut request: NadeoRequest,

@@ -1,12 +1,12 @@
 use crate::auth::token::ParseTokenError;
-use crate::Error;
+use crate::error::Error;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-/// Deserialized version of the access token from an auth request with the Nadeo API.
+// Deserialized version of the access token from an auth request with the Nadeo API.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct AccessToken {
     secret: String,
@@ -17,7 +17,7 @@ pub(crate) struct AccessToken {
 impl FromStr for AccessToken {
     type Err = Error;
 
-    /// Deserializes the access token returned from the auth request.
+    // Deserializes the access token returned from the auth request.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let values: Vec<_> = s.split_terminator('.').collect();
         if values.len() != 3 {

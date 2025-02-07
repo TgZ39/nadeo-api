@@ -1,73 +1,48 @@
 //! This crate provides an interface for working with the [Nadeo API](https://webservices.openplanet.dev/).
-//! It handles (re)authentication automatically.
+//! It handles all authentication automatically.
 //!
 //! # Getting started
 //!
-//! At first, you need to create a [`NadeoClient`] to execute [`NadeoRequest`]s.
-//! You will need to provide credentials for at least one authentication method and a `UserAgent`.
+//! The [`NadeoClient`] is thin wrapper around `reqwest::Client` and can execute [`NadeoRequest`]'s.
+//! To create a `NadeoClient` we need to create a [`NadeoClientBuilder`] using [`NadeoClient::builder`].
+//!
+//! > Note that at least one of the 3 `NadeoClientBuilder::*_auth` needs to be provided.
 //!
 //! ```rust
-//! # use nadeo_api::NadeoClient;
+//! # async {
+//!  use nadeo_api::prelude::*;
 //!
-//! let mut client = NadeoClient::builder()
-//!     .with_normal_auth("ubisoft_account_email", "ubisoft_account_password")
-//!     .with_server_auth("my_username", "my_password")
+//!  let client: NadeoClient = NadeoClient::builder()
+//!     .user_agent("Foo Project / example@example.com") // required
+//!     .with_normal_auth("ubisoft@example.com", "my_ubisoft_password")
+//!     .with_server_auth("my_username", "my_server_password")
 //!     .with_oauth("my_identifier", "my_secret")
-//!     .user_agent("Testing the API / my.email@gmail.com")
 //!     .build()
 //!     .await?;
+//! # }
 //! ```
 //!
-//! Use [`NadeoRequest::builder`] to create a `NadeoRequestBuilder`.
-//! To create a [`NadeoRequest`] you will need to supply:
-//! - an [`AuthType`]:
-//!     - The depends on the API endpoint you want to make a request to.
-//!       If the endpoint requires `AuthType::NadeoServices` or `AuthType::NadeoLiveServices` you need to build the [`NadeoClient`] with `NadeoClientBuilder::with_normal_auth()`.
-//!       If the endpoint requires `AuthType::OAuth` you need to build the [`NadeoClient`] with `NadeoClientBuilder::with_oauth()`.
-//! - an `URL`
-//! - a [`Method`]
-//!
-//! For more information about the API endpoints look [here](https://webservices.openplanet.dev/).
+//! To create a [`NadeoRequest`] we use [`NadeoClient::get`] or [`NadeoClient::post`] or any other http method.
 //!
 //! ```rust
-//! # use nadeo_api::{NadeoClient, NadeoRequest};
-//! # use nadeo_api::auth::AuthType;
-//! # use nadeo_api::request::Method;
+//! # async {
+//! use nadeo_api::prelude::*;
+//!  let url = "https://prod.trackmania.core.nadeo.online/accounts/clubTags/?accountIdList=29e75531-1a9d-4880-98da-e2acfe17c578";
+//!  let req: NadeoRequestBuilder = client.get(url, AuthType::NadeoServices)?;
 //!
-//! let mut client = NadeoClient::builder()
-//!     .with_normal_auth("ubisoft_account_email", "ubisoft_account_password")
-//!     .with_oauth("my_identifier", "my_secret")
-//!     .user_agent("Testing the API / my.email@gmail.com")
-//!     .build()
-//!     .await?;
+//!  let resp: Response = req.send().await?;
+//!  let body = resp.text().await?;
 //!
-//! let request = NadeoRequest::builder()
-//!     .auth_type(AuthType::NadeoServices)
-//!     .url("some_url")
-//!     .method(Method::GET)
-//!     .build()?;
+//!  println!("Response: {body}");
+//! # }
 //! ```
 //!
-//! To execute the request use:
-//!
-//! ```rust
-//! let res = client.execute(request).await?;
-//! ```
-//!
-//! [`Method`]: request::Method
-//! [`AuthType::NadeoServices`]: auth::AuthType::NadeoServices
-//! [`AuthType::NadeoLiveServices`]: auth::AuthType::NadeoLiveServices
-//! [`AuthType::OAuth`]: auth::AuthType::OAuth
-//! [`AuthType`]: auth::AuthType
-//! [`NadeoClientBuilder::with_normal_auth()`]: client::client_builder::NadeoClientBuilder::with_normal_auth
-//! [`NadeoClientBuilder::with_oauth_auth()`]: client::client_builder::NadeoClientBuilder::with_oauth
+//! [`NadeoClient`]: client::NadeoClient
+//! [`NadeoClient::builder`]: client::NadeoClient::builder
+//! [`NadeoClientBuilder`]: client::client_builder::NadeoClientBuilder
 
 pub mod auth;
 pub mod client;
 pub mod error;
+pub mod prelude;
 pub mod request;
-
-pub use error::{Error, Result};
-
-pub use client::NadeoClient;
-pub use request::NadeoRequest;
