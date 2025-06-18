@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/TgZ39/nadeo-api/compare/v0.3.0...v0.3.1) - 2025-06-18
+
+### Other
+
+- Minor change to remove www from github url in Cargo.toml
+- Update strum requirement from 0.26 to 0.27
+
 ## [0.3.0](https://github.com/TgZ39/nadeo-api/compare/v0.2.4...v0.3.0) - 2025-02-04
 
 ### Changed
